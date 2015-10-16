@@ -8,7 +8,8 @@ $(document).ready(function() {
   // Hide the main container until the data has been read in
   $('#main-container').hide();
 
-  $.getJSON("trajectory.json", function(data) {
+  var jsonFn = getJSONFilename(document.URL);
+  $.getJSON(jsonFn, function(data) {
     // Read the JSON data into a new configuration object
     config = new Configuration(data);
 

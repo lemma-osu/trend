@@ -37,11 +37,8 @@ function Configuration(data) {
     }
 
     // Initialize selected values
-    // this.selected.series = this.catFields[_.keys(this.catFields)[0]];
-    // this.selected.variable = yearFields[_.keys(yearFields)[0]];
-    // TODO: Change these once done testing
-    this.selected.series = this.catFields['DR'];
-    this.selected.variable = this.contFields['BA_GE_3_WEIGHTED_MEAN'];
+    this.selected.series = this.catFields[_.keys(this.catFields)[0]];
+    this.selected.variable = this.contFields[_.keys(this.contFields)[0]];
     this.selected.area = areaFields[_.keys(areaFields)[0]];
     this.selected.year = yearFields[_.keys(yearFields)[0]];
   };
@@ -198,3 +195,20 @@ var filterData = function(config) {
   });
   return {data: seriesData, count: recordCount};
 };
+
+function getJSONFilename(url) {
+  var fn = 'trajectory.json';
+  var q = url.split('?')[1];
+  if (q != undefined) {
+    q = q.split('&');
+    var hash = q[0].split('=');
+    if (hash[0] != 'json-filename') {
+      var msg = 'Wrong query parameter key: ' + hash[0];
+      throw Error(msg);
+    }
+    return hash[1];
+  } else {
+    return 'trajectory.json';
+  }
+};
+

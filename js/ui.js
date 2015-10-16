@@ -82,7 +82,7 @@ var createModalDropdownMenu = function(obj) {
       selectAllElements(m, dropdownId);
     });
     $(icons).find('.select-none').on('click', function(e) {
-      selectAllElements(m);
+      selectNoElements(m);
     });
 
     // Append these icons to the header div
