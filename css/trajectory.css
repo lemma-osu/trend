@@ -5,16 +5,53 @@
    padding: 0px;
 }
 
+html {
+   overflow-y: scroll;
+}
+
 body {
    font-family: 'Lato', sans-serif;
    font-weight: 700;
    margin: 10px;
 }
 
+body.dimmed {
+    height: 100%;
+    margin-bottom: 1px;
+}
+
 #title {
    font-size: 28px;
 }
 
-#year-range {
+#range {
    padding-bottom: 10px;
+}
+
+.modal-link {
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.modal .select-tools {
+   margin: 0 0 0 1.0em;
+}
+
+.modal .select-tools i {
+   color: #21ba45;
+   font-size: 0.8em;
+   cursor: pointer;
+}
+
+.ui.small.modal {
+   width: 350px;
+   margin: 0 0 0 -175px;
+}
+
+.list-info {
+   margin-bottom: 5px;
+}
+
+#left-info {
+   border-right: 1px solid rgba(34, 36, 38, 0.15);
 }

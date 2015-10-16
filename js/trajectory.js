@@ -1,155 +1,141 @@
-// Master object for holding the current parameters
-var parameters = {
-    focus: {},
-    series: [],
-    years: [0, 0],
-    yearVariable: "",
-    countVariable: "",
-    variable: ""
-};
+var config;
 var rawData,
     filteredData,
-    strata;
+    compositeContainer;
 
 $(document).ready(function() {
+
+  // Hide the main container until the data has been read in
   $('#main-container').hide();
 
-  $('.ui.menu .item')
-    .tab()
-  ;
-
   $.getJSON("trajectory.json", function(data) {
-    // Get the categorical fields
-    var catFields = _.chain(data.variables)
-      .filter(function(d) { return d.type == "categorical" })
-      .map(function(d) { return d.name; })
-      .value();
+    // Read the JSON data into a new configuration object
+    config = new Configuration(data);
 
-    // Get the continuous fields
-    var contFields = _.chain(data.variables)
-      .filter(function(d) { return d.type == "continuous"; })
-      .map(function(d) { return d.name; })
-      .value();
-
-    // Ensure one and only one year field
-    var yearFields = _.chain(data.variables)
-      .filter(function(d) { return d.type == "year"; })
-      .map(function(d) { return d.name; })
-      .value();
-    if (yearFields.length != 1) {
-      console.log("There must be exactly one year field!");
-    }
-    parameters.yearVariable = yearFields[0];
-
-    // Ensure one and only one area (weighting) field
-    var areaFields = _.chain(data.variables)
-      .filter(function(d) { return d.type == "area"; })
-      .map(function(d) { return d.name; })
-      .value();
-    if (areaFields.length != 1) {
-      console.log("There must be exactly one area field!");
-    }
-    parameters.countVar = areaFields[0];
-
-    // TODO: Test just adding count to contFields
-    contFields.push(parameters.countVar);
-
-    // Union of all fields from the JSON file
-    var jsonFields = _.union(catFields, contFields, yearFields, areaFields);
-
-    // Open the CSV file 
+    // Open the CSV file
     d3.csv(data.fn, function(error, rows) {
       if (error) throw error;
       rawData = rows;
 
       // Ensure that all fields are accounted for from the JSON file
-      var csvFields = Object.keys(rawData[0]);
-      var sameFields = _.isEqual(jsonFields.sort(), csvFields.sort());
-      // TODO: Raise error if this is not true
+      var csvFields = _.keys(rawData[0]);
+      if (!_.isEqual(config.getFields().sort(), csvFields.sort())) {
+        msg = 'Fields from JSON and CSV differ.  Check both files'
+        throw Error(msg);
+      }
 
-      // Find the unique values of all categorical variables
-      strata = _.map(catFields, function(f) {
-        return {
-          key: f,
-          values: _.chain(rawData)
-            .map(function(d) { return d[f]; })
-            .uniq()
-            .sortBy(function(k) { return k; })
-            .value()
-        };
-      });
-
-      // Add to the parameters object
-      _.forEach(strata, function(s) {
-        parameters.focus[s.key] = s.values;
-      });
-
-      // Find the unique values for years
-      var years = _.chain(rawData)
-        .map(function(d) { return +d[parameters.yearVariable]; })
+      // Convert all numeric fields
+      var numberFields = _.chain()
+        .union(_.keys(config.contFields), [config.selected.year.key])
         .uniq()
-        .sortBy(function(k) { return k; })
         .value();
-      parameters.years[0] = _.min(years, function(d) { return +d; });
-      parameters.years[1] = _.max(years, function(d) { return +d; });
-
-      $.each(strata, function(i, item) {
-        // Create a label and pulldown for each stratum and add to the
-        // focus element
-        var o = createStratumDropdown(item);
-        $('#focus').append(o.label);
-        $('#focus').append(o.pulldown);
-
-        // Initialize the focus dropdown menus
-        $('#focus .ui.dropdown').dropdown({
-          onChange: focusDropdownChange
+      _.forEach(rawData, function(r) {
+        _.forEach(numberFields, function(f) {
+          r[f] = +r[f];
         });
       });
 
-      // Create a multiselect dropdown for series
-      var o = createSeriesDropdown(strata);
-      $('#series').append(o);
+      // Find the unique values of all categorical variables - this also
+      // initializes the selected strata to be all categories in each
+      // stratum
+      config.initializeStrata(rawData);
 
-      // Initialize the series dropdown menu
-      $('#series .ui.dropdown').dropdown({
-        onChange: seriesDropdownChange
+      // Find the unique values for years
+      config.initializeYearRange(rawData);
+
+      // Initialize the information panel of currently selected configuration 
+      initInformation(config);
+
+      // Create actions that can be used across all modal menus
+      var actions = $('<div class="actions"></div>');
+      actions.append('<div class="ui positive button">OK</div>');
+      actions.append('<div class="ui cancel button">Cancel</div>');
+
+      // Create modal menus for all strata
+      _.each(_.keys(config.strata), function(k, i) {
+        // TODO: Change this to alias of each category
+        var items = _.map(config.strata[k], function(d) {
+          return { key: d, alias: d }
+        });
+        createModalDropdownMenu({
+          modalId: 'focus' + i + '-modal',
+          header: config.catFields[k].alias,
+          actions: actions,
+          f: focusDropdownChange,
+          dropdownId: k,
+          dropdownItems: items,
+          multiple: true,
+          defaultText: 'All'
+        });
       });
 
-      // Create the year slider
-      o = createYearSlider(years);
-      $('#series').append(o);
-
-      // Initialize the year slider events
-      $('#series #year-slider').slider({
-        slide: yearSliderChange,
-        stop: yearSliderStop
-      }); 
-
-      // Create a select box for variable
-      o = createVariableDropdown(contFields);
-      $('#variable').append(o);
-
-      // Initialize the variable dropdown menu
-      $('#variable .ui.dropdown').dropdown({
-        onChange: variableDropdownChange
+      // Create a modal menu with dropdown for series
+      createModalDropdownMenu({
+        modalId: 'series-modal',
+        header: 'Series',
+        actions: actions,
+        f: seriesDropdownChange,
+        dropdownId: 'series-dropdown',
+        dropdownItems: config.catFields,
+        multiple: false,
+        defaultText: 'None'
+      });
+     
+      // Create a modal menu with dropdown for variable 
+      createModalDropdownMenu({
+        modalId: 'variable-modal',
+        header: 'Variable',
+        actions: actions,
+        f: variableDropdownChange,
+        dropdownId: 'variable-dropdown',
+        dropdownItems: config.contFields,
+        multiple: false,
+        defaultText: 'None'
       });
 
-      // Initialize the selected info box
-      initSelected(strata, years);
+      // Create a modal menu with slider for the year range 
+      createModalSliderMenu({
+        modalId: 'year-modal',
+        header: 'Year Range',
+        actions: actions,
+        onChange: yearSliderChange,
+        onStop: yearSliderStop,
+        limits: config.selected.years,
+        sliderId: 'year-slider'
+      });
+  
+      // In the modal menus, set the selected values from config
+      var s = config.selected;
+      $('#series-dropdown').dropdown('set selected', s.series.key);
+      $('#variable-dropdown').dropdown('set selected', s.variable.key);
 
       // Get the currently filtered data
-      filteredData = filterData();
+      filteredData = filterData(config);
 
       // Update the count of matching records
-      updateCount(filteredData);
-
-      // Set a handler for the resize window
-      d3.select(window).on('resize', resizeChart); 
+      updateRecordCount(filteredData.count);
 
       // Finished loading - reveal the form
-      $('#main-container').show(function() {
-        initChart();
-        $('.dimmer').fadeOut(1000);
+      $('#main-container').fadeIn(500, function() {
+        // $('.dimmer').fadeOut();
+
+        // Get width of the chart element and set height to static for now
+        var width = $('#chart').width(),
+          height = 400;
+
+        // Create the container to hold one panel - this will later be
+        // extended to contain all panels
+        compositeContainer = models.compositeContainer()
+            .xAxis.label(config.selected.year.alias)
+            .width(width)
+            .height(height);
+
+        // Render the chart
+        var svg = d3.select('#chart svg')
+          .datum(filteredData.data)
+          .attr('width', width)
+          .attr('height', height)
+          .call(compositeContainer);
       });
     });
   });

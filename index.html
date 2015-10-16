@@ -2,70 +2,73 @@
 <html>
 
 <head>
-  <meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
-  <title>Test Semantic</title>
-  <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.4/semantic.min.css">
+  <meta charset="utf-8">
+  <title>GNN Trend Tool</title>
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.4/semantic.min.css">
   <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
-  <link rel="stylesheet" type="text/css" href="css/trajectory.css">
-  <link rel="stylesheet" type="text/css" href="css/chart.css">
-  <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
-  <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.4/semantic.min.js"></script>
-  <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
-  <script
-    src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+  <link rel="stylesheet" href="css/trajectory.css">
+  <link rel="stylesheet" href="css/chart.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.4/semantic.min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
+  <script src="js/util.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/chart.js"></script>
-  <script src="js/trajectory.js"></script>
 </head>
 
 <body>
-  <div class="ui active dimmer">
+  <!-- div class="ui active dimmer">
     <div class="ui text loader">Loading</div>
-  </div>
+  </div -->
   <div id="main-container">
-    <h1 class="ui header">GNN Trajectory Tool</h1>
+    <h1 class="ui header">GNN Trend Tool</h1>
     <div class="ui grid">
-      <div class="eleven wide column">
-        <div class="ui top attached tabular menu">
-          <a class="active item" data-tab="focus">Focus Area</a>
-          <a class="item" data-tab="series">Series / Year Range</a>
-          <a class="item" data-tab="variable">Variable</a>
-        </div>
-        <div class="ui bottom attached active tab segment" data-tab="focus">
-          <div id="focus" class="ui grid"></div>
-        </div>
-        <div class="ui bottom attached tab segment" data-tab="series">
-          <div id="series" class="ui grid"></div>
-        </div>
-        <div class="ui bottom attached tab segment" data-tab="variable">
-          <div id="variable" class="ui grid"></div>
-        </div>
-        <div id="chart"></div>
-      </div>
-      <div class="five wide column">
-        <div id="parameters" class="ui info message">
-          <div class="header">
-            Current Selections
+      <div class="row">
+        <div class="sixteen wide column">
+          <div id="parameters" class="ui info message">
+            <div class="header">Current Selections</div>
+            <div class="ui divider"></div>
+            <div class="ui grid">
+              <div class="row">
+                <div id="left-info" class="eleven wide column">
+                  <div class="list-info">Focus Area</div>
+                  <div id="focus-container" class="ui equal width grid"></div>
+                </div>
+                <div class="five wide column">
+                  <div class="list-info">
+                    <span>Series: </span>
+                    <span id="series-link" class="modal-link"></span>
+                  </div>
+                  <div class="list-info">
+                    <span>Year Range: </span>
+                    <span id="year-link" class="modal-link"></span>
+                  </div>
+                  <div class="list-info">
+                    <span>Variable: </span>
+                    <span id="variable-link" class="modal-link"></span>
+                  </div>
+                  <div class="list-info">
+                    <span>Matching Records: </span>
+                    <span id="matching-count"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="ui divider"></div>
-          <div>Focus Area</div>
-          <ul id="focus-list" class="list"></ul>
-          <div class="ui divider"></div>
-          <div>Series</div>
-          <ul id="series-list" class="list"></ul>
-          <div class="ui divider"></div>
-          <div>Year Range</div>
-          <ul id="year-list" class="list"></ul>
-          <div class="ui divider"></div>
-          <div>Variable</div>
-          <ul id="variable-list" class="list"></ul>
-          <div class="ui divider"></div>
-          <div id="matching-count">Matching Records</div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="sixteen wide column">
+          <div id="chart">
+            <svg></svg>
+          </div>
         </div>
       </div>
     </div>
   </div>
+  <script src="js/trajectory.js"></script>
 </body>
 
 </html>
