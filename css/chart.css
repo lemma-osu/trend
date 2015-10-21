@@ -94,3 +94,15 @@
   stroke-width: 20px;
   stroke-opacity: .5;
 }
+
+rect.pane {
+  fill: none;
+  pointer-events: all;
+}
+
+#chart-border {
+  fill: none;
+  stroke: #000;
+  stroke-opacity: .75;
+  shape-rendering: crispEdges;
+}

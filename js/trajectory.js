@@ -54,9 +54,9 @@ $(document).ready(function() {
 
       // Create modal menus for all strata
       _.each(_.keys(config.strata), function(k, i) {
-        // TODO: Change this to alias of each category
         var items = _.map(config.strata[k], function(d) {
-          return { key: d, alias: d }
+          var alias = config.catFields[k].categories[d].alias;
+          return { key: d, alias: d + ': ' + alias }
         });
         createModalDropdownMenu({
           modalId: 'focus' + i + '-modal',

@@ -234,7 +234,7 @@ models.legendContainer = function() {
 };
 
 models.lineContainer = function() {
-  var margin = {top: 0, right: 0, bottom: 5, left: 0},
+  var margin = {top: 0, right: 0, bottom: 0, left: 0},
     width = 960,
     height = 500,
     dotRadius = function() { return 2.5 },
@@ -263,12 +263,13 @@ models.lineContainer = function() {
         return series;
       });
 
-      // Set the domain and range of the axes
+      // Set the domain and range of the x-axis
       x.domain(d3.extent(d3.merge(seriesData), function(d) { return d[0]; }))
         .range([0, width - margin.left - margin.right]);
 
-      y.domain(d3.extent(d3.merge(seriesData), function(d) { return d[1]; }))
-        .range([height - margin.top - margin.bottom, 0]);
+      // Set the range for the y-axis, but don't set the domain as this can
+      // change based on zooming 
+      y.range([height - margin.top - margin.bottom, 0]);
 
       // Create a 2D array with x, y coordinates and line and point
       // indexes
@@ -291,11 +292,32 @@ models.lineContainer = function() {
       var g = wrap.select('g')
         .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
+      // Create a border for the series data
+      gEnter.append('rect')
+        .attr('id', 'chart-border')
+
+      // Create a clip-path for the series data
+      gEnter.append('clipPath')
+          .attr('id', 'clip-border')
+        .append('rect');
+
       var voronoiClip =  gEnter.append('g')
         .attr('class', 'voronoi-clip')
         .append('clipPath')
           .attr('id', 'voronoi-clip-path-' + id)
         .append('rect');
+
+      wrap.select('#chart-border')
+        .attr('x', 0)
+        .attr('y', 0)
+        .attr('width', width - margin.left - margin.right)
+        .attr('height', height - margin.top - margin.bottom);
+
+      wrap.select('#clip-border rect')
+        .attr('x', 0)
+        .attr('y', 0)
+        .attr('width', width - margin.left - margin.right)
+        .attr('height', height - margin.top - margin.bottom);
       
       wrap.select('.voronoi-clip rect')
         .attr('x', -10)
@@ -312,7 +334,7 @@ models.lineContainer = function() {
       pointClips.enter().append('clipPath')
         .attr('class', 'clip-path')
         .append('circle')
-          .attr('r', 25);
+          .attr('r', 10);
       pointClips.exit().remove();
       pointClips
         .attr('id', function(d) {
@@ -375,6 +397,7 @@ models.lineContainer = function() {
       var lines = wrap.select('.lines').selectAll('.line')
         .data(function(d) { return d }, function(d) { return d.label });
       lines.enter().append('g')
+        .attr('clip-path', 'url(#clip-border)')
         .style('stroke-opacity', 1e-6)
         .style('fill-opacity', 1e-6);
       lines.exit().transition()
@@ -446,6 +469,20 @@ models.lineContainer = function() {
     return chart;
   };
 
+  chart.x = function(_) {
+    if (!arguments.length)
+      return x;
+    x = _;
+    return chart;
+  };
+
+  chart.y = function(_) {
+    if (!arguments.length)
+      return y;
+    y = _;
+    return chart;
+  };
+
   chart.dotRadius = function(_) {
     if (!arguments.length)
       return dotRadius; 
@@ -469,14 +506,15 @@ models.lineContainer = function() {
 };
 
 models.compositeContainer = function() {
-  var margin = {top: 30, right: 20, bottom: 50, left: 60},
+  var margin = {top: 30, right: 20, bottom: 50, left: 40},
     width = 960,
     height = 500,
     dotRadius = function() { return 2.5 },
+    yDomain = 'init',
     xAxisLabelText = false,
     yAxisLabelText = false,
     color = d3.scale.category10().range();
-    dispatch = d3.dispatch('showTooltip', 'hideTooltip');
+    dispatch = d3.dispatch('showTooltip', 'hideTooltip', 'zoomView');
 
   var x = d3.scale.linear(),
     y = d3.scale.linear(),
@@ -487,7 +525,7 @@ models.compositeContainer = function() {
 
   // This gets called with the single svg element, so the data size of
   // selection is only 1 at this point, even though it contains the data for
-  // all four arrays
+  // all arrays
   function chart(selection) {
     selection.each(function(data) {
       yAxisLabelText = config.selected.variable.alias + ' (' + 
@@ -503,12 +541,6 @@ models.compositeContainer = function() {
       // gEnter points to svg -> g.wrap.d3lineWithLegend -> g
       var gEnter = wrap.enter().append('g')
         .attr('class', 'wrap d3lineWithLegend').append('g');
-
-      // Add containers for axes, legend and lines
-      gEnter.append('g').attr('class', 'legendWrap');
-      gEnter.append('g').attr('class', 'x axis');
-      gEnter.append('g').attr('class', 'y axis');
-      gEnter.append('g').attr('class', 'linesWrap');
 
       // Event code
       legend.dispatch.on('legendClick', function(d, i) { 
@@ -545,6 +577,12 @@ models.compositeContainer = function() {
         dispatch.hideTooltip(e);
       });
 
+      dispatch.on('zoomView', function(e) {
+        g.select('.x.axis').call(xAxis);
+        g.select('.y.axis').call(yAxis);
+        selection.call(chart);
+      });
+
       dispatch.on('showTooltip', function(e) {
         var offset = $('#chart').offset(),
           left = e.pos[0] + offset.left,
@@ -564,6 +602,29 @@ models.compositeContainer = function() {
         tooltip.cleanup();
       });
 
+      // Set the x range and extent from all data
+      x.domain(d3.extent(d3.merge(series), function(d) { return d[0]; }))
+        .range([0, width - margin.left - margin.right]);
+
+      // If the y domain has not already been set, set it from the y-range
+      // of all data.  After that, we respond to zoom events 
+      y.range([height - margin.top - margin.bottom, 0]);
+      if (yDomain == 'init') {
+        yDomain = 'set';
+        var extent = d3.extent(d3.merge(series), function(d) { return d[1]; }) 
+        var m = (extent[1] - extent[0]) / 90.0;
+        var dMin = extent[1] - m * 95.0;
+        var dMax = m * 100.0 + extent[0]
+        y.domain([dMin, dMax]);
+      }
+
+      // Add containers for axes, legend and lines
+      gEnter.append('rect').attr('class', 'pane');
+      gEnter.append('g').attr('class', 'legendWrap');
+      gEnter.append('g').attr('class', 'x axis');
+      gEnter.append('g').attr('class', 'y axis');
+      gEnter.append('g').attr('class', 'linesWrap');
+
       // Set attributes for legend container - this needs to be done first
       // as there could be more than one row of legend items.  All other
       // sizes are set after the legend is set
@@ -577,25 +638,51 @@ models.compositeContainer = function() {
         .attr('transform', 'translate(0,' + (-legend.height()) +')')
         .call(legend);
 
+      // Figure out the size of the y axis labels and potentially adjust the
+      // chart size to accomodate large numbers.
+
+      // Set the format of the y ticks
+      if (y.domain()[1] > 1000.0) {
+        yAxis.tickFormat(d3.format('.2e'));
+      } else {
+        yAxis.tickFormat(d3.format('g'));
+      }
+
+      // Get the maximum size of the labels
+      var yTexts = wrap.select('g').select('.y.axis')
+        .call(yAxis)
+        .selectAll('.tick text');
+
+      var yLabelLength = d3.max(yTexts[0], function(d) {
+        return d.getComputedTextLength();
+      });
+
+      // Adjust the left margin accordingly
+      var left = margin.left + yLabelLength;
+
       // Reset the location and the height of this container based on
       // the placement of the legend
       margin.top = legend.height();  //need to re-render to see update
       var g = wrap.select('g')
-        .attr('transform', 'translate(' + margin.left + ',' + 
-          margin.top + ')');
+        .attr('transform', 'translate(' + left + ',' + margin.top + ')');
 
-      // Sets the x range and extent from all data
-      x.domain(d3.extent(d3.merge(series), function(d) { return d[0]; }))
-        .range([0, width - margin.left - margin.right]);
-
-      // Sets the y range and extent from all data
-      y.domain(d3.extent(d3.merge(series), function(d) { return d[1]; }))
-        .range([height - margin.top - margin.bottom, 0]);
+      // Set the zoom behavior
+      var zoom = d3.behavior.zoom()
+        .y(y)
+        .on('zoom', dispatch.zoomView);
+   
+      // Add a pane to capture zoom events
+      wrap.select('.pane')
+        .attr('width', width - left - margin.right)
+        .attr('height', height - margin.top - margin.bottom)
+        .call(zoom);
 
       // Sets the width, height, colors of the lines chart element
       lines
-        .width(width - margin.left - margin.right)
+        .width(width - left - margin.right)
         .height(height - margin.top - margin.bottom)
+        .x(x)
+        .y(y)
         .color(
           data
             // map color by index if not present
@@ -610,7 +697,7 @@ models.compositeContainer = function() {
         .tickSize(-(height - margin.top - margin.bottom), 0);
       yAxis
         .ticks(height / 36)
-        .tickSize(-(width - margin.right - margin.left), 0);
+        .tickSize(-(width - left - margin.right), 0);
 
       // Join data for the lines container
       var linesWrap = wrap.select('.linesWrap')
@@ -642,11 +729,11 @@ models.compositeContainer = function() {
       yAxisLabel.enter().append('text')
         .attr('class', 'axislabel')
         .attr('transform', 'rotate(-90)')
-        .attr('text-anchor', 'middle')
-        .attr('y', 30 - margin.left);
+        .attr('text-anchor', 'middle');
       yAxisLabel.exit().remove();
       yAxisLabel
         .attr('x', -y.range()[0] / 2)
+        .attr('y', -yLabelLength - 20)
         .text(function(d) { return d; });
 
       // Set the x axis ticks 
@@ -655,7 +742,6 @@ models.compositeContainer = function() {
         .selectAll('line.tick')
         .filter(function(d) { return !d; })
         .classed('zero', true);
-
     });
     return chart;
   };
@@ -688,6 +774,13 @@ models.compositeContainer = function() {
     if (!arguments.length)
       return color;
     color = _;
+    return chart;
+  };
+
+  chart.yDomain = function(_) {
+    if (!arguments.length)
+      return yDomain;
+    yDomain = _;
     return chart;
   };
 
@@ -724,7 +817,13 @@ models.compositeContainer = function() {
 };
 
 function updateChart(filteredData) {
+  // Fill with new data
   var svg = d3.select('#chart svg')
     .datum(filteredData);
+
+  // Reset the zoom
+  compositeContainer.yDomain('init');
+
+  // Redraw the chart
   svg.call(compositeContainer);
-}
+};

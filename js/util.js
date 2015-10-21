@@ -9,10 +9,21 @@ function Configuration(data) {
   // separate classes
   this.initialize = function(data) {
     function getFields(type) { 
+      var colors = d3.scale.category20().range();
       var f = _.filter(data.variables, function(d) {
         return d.type == type;
       });
-      return _.object(_.map(f, function(d) { return [d.key, d]; }));
+      return _.object(_.map(f, function(d) {
+        // If this is a categorical variable, store the categories as key/value
+        // pairs instead of an array.  We also assign a unique color to this
+        // category so that it can be used consistently across graphs
+        if (type == 'categorical') {
+          d.categories = _.object(_.map(d.categories, function(x, i) {
+            return [x.key, {'alias': x.alias, 'color': colors[i]}];
+          })); 
+        }
+        return [d.key, d];
+      }));
     };
 
     // Separate the different types of fields
@@ -54,31 +65,6 @@ function Configuration(data) {
       )
       .uniq()
       .value();
-  };
-
-  // Set selected elements based on the key passed in
-  this.setSelected = function(mapping) {
-    var config = this;
-    _.forEach(_.keys(mapping), function(k) {
-      var v = mapping[k];
-      var value;
-      switch(k) {
-        case 'series':
-          value = config.catFields[v];
-          break;
-        case 'variable':
-          value = config.contFields[v];
-          break;
-        default:
-          var msg = 'Value ' + k + ' is not allowed to be set for selected';
-          throw Error(msg);
-      }
-      config.selected[k] = value;
-    }); 
-  };
-
-  this.getSelected = function() {
-    return this.selected;
   };
 
   this.initializeStrata = function(data) {
@@ -130,7 +116,11 @@ var filterData = function(config) {
   // the series data and return 
   var s = config.selected;
   var seriesVar = s.series.key;
-  var series = _.uniq(_.map(data, function(d) { return d[seriesVar]; }));
+  var series = _.chain(data)
+    .map(function(d) { return d[seriesVar]; })
+    .uniq()
+    .sortBy(function(d) { return d; })
+    .value();
 
   // Get the continuous variable
   var contVar = s.variable.key;
@@ -142,6 +132,9 @@ var filterData = function(config) {
   var yearVar = s.year.key;
   var minYear = s.years[0];
   var maxYear = s.years[1];
+
+  // Get the categories in this series for the color choices
+  var cats = config.catFields[seriesVar].categories;
 
   // Get the data for each series value.  This is a somewhat convoluted bit
   // of code, but it first maps a function over all unique series which
@@ -161,7 +154,8 @@ var filterData = function(config) {
     });
     var years = _.uniq(_.map(subset, function(d) { return +d[yearVar]; }));
     years = _.sortBy(years, function(y) { return y; });
-    
+
+    var color = cats[s].color;
     if (contVar != countVar) {
       return {
         label: s,
@@ -176,7 +170,8 @@ var filterData = function(config) {
             return memo + (d[countVar]);
           }, 0);
           return [y, w_s / w];
-        })
+        }),
+        color: color
       };
     } else {
       return {
@@ -189,7 +184,8 @@ var filterData = function(config) {
             return memo + (d[countVar]);
           }, 0);
           return [y, w];
-        })
+        }),
+        color: color
       };
     }
   });
