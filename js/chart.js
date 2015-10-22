@@ -108,10 +108,10 @@ var models = {};
 models.legendContainer = function() {
   // Set up the positioning and color of the legend.  Dispatch is a d3 way to
   // loosely couple separate components with a single event
-  var margin = {top: 5, right: 0, bottom: 5, left: 10},
+  var margin = {top: 0, right: 0, bottom: 5, left: 10},
     width = 800,
     height = 20,
-    color = d3.scale.category10().range(),
+    color = d3.scale.category20().range(),
     dispatch = d3.dispatch('legendClick', 'legendMouseover', 'legendMouseout');
 
   // Constructor for this chanrt
@@ -141,8 +141,8 @@ models.legendContainer = function() {
 
       // Update existing series
       series.select('circle')
-        .style('fill', function(d, i) { return d.color || color[i % 10]; })
-        .style('stroke', function(d, i) { return d.color || color[i % 10]; });
+        .style('fill', function(d, i) { return d.color || color[i % 20]; })
+        .style('stroke', function(d, i) { return d.color || color[i % 20]; });
       series.select('text')
         .text(function(d) { return d.label; });
 
@@ -155,14 +155,14 @@ models.legendContainer = function() {
 
       // Add the actual legend elements (circle and text)
       seriesEnter.append('circle')
-        .style('fill', function(d, i) { return d.color || color[i % 10]; })
-        .style('stroke', function(d, i) { return d.color || color[i % 10]; })
+        .style('fill', function(d, i) { return d.color || color[i % 20]; })
+        .style('stroke', function(d, i) { return d.color || color[i % 20]; })
         .attr('r', 5);
       seriesEnter.append('text')
         .text(function(d) { return d.label; })
         .attr('text-anchor', 'start')
         .attr('dy', '.32em')
-        .attr('dx', '8');
+        .attr('dx', '10');
 
       // Set the disabled class state
       series.classed('disabled', function(d) { return d.disabled; });
@@ -170,29 +170,32 @@ models.legendContainer = function() {
       // Exit event
       series.exit().remove();
 
+      // Run through the labels one time to calculate the max spacing needed
+      // for all labels.  This will organize the labels into columns
+      var maxLength = 0;
+      series.each(function(d, i) {
+        var node = d3.select(this).select('text').node();
+        var length = node.getComputedTextLength() + 45; 
+        maxLength = length > maxLength ? length : maxLength;
+      });
+
       // Set the location of the legend series element, accounting for 
       // cases when there is not enough room for all series to fit on a 
       // single line
-      var ypos = 0, newxpos = 0, maxwidth = 0, xpos;
+      var ypos = 0, newxpos = 0, maxWidth = 0, xpos;
       series
         .attr('transform', function(d, i) {
-          var node = d3.select(this).select('text').node();
-          var length = node.getComputedTextLength() + 28;
           xpos = newxpos;
-          if (width < margin.left + margin.right + xpos + length) {
+          if (width < margin.left + margin.right + xpos + maxLength) {
             newxpos = xpos = 0;
-            ypos += 20;
+            ypos += 25;
           }
-          newxpos += length;
-          if (newxpos > maxwidth)
-            maxwidth = newxpos;
+          newxpos += maxLength;
+          if (newxpos > maxWidth)
+            maxWidth = newxpos;
           return 'translate (' + xpos + ',' + ypos + ')';
         });
 
-      // Position legend as far right as possible within the total width
-      // g.attr('transform', 'translate(' + (width - margin.right - maxwidth) + 
-      //   ',' + margin.top + ')');
-    
       // Adjust the height
       height += margin.top + ypos;
     });
@@ -238,7 +241,7 @@ models.lineContainer = function() {
     width = 960,
     height = 500,
     dotRadius = function() { return 2.5 },
-    color = d3.scale.category10().range(),
+    color = d3.scale.category20().range(),
     id = Math.floor(Math.random() * 10000),
     x = d3.scale.linear(),
     y = d3.scale.linear(),
@@ -406,8 +409,8 @@ models.lineContainer = function() {
         .remove();
       lines.attr('class', function(d,i) { return 'line line-' + i })
         .classed('hover', function(d) { return d.hover })
-        .style('fill', function(d,i) { return color[i % 10] })
-        .style('stroke', function(d,i) { return color[i % 10] })
+        .style('fill', function(d,i) { return d.color || color[i % 20] })
+        .style('stroke', function(d,i) { return d.color || color[i % 20] })
       lines.transition()
         .style('stroke-opacity', 1)
         .style('fill-opacity', .5);
@@ -506,14 +509,14 @@ models.lineContainer = function() {
 };
 
 models.compositeContainer = function() {
-  var margin = {top: 30, right: 20, bottom: 50, left: 40},
+  var margin = {top: 0, right: 20, bottom: 50, left: 40},
     width = 960,
     height = 500,
     dotRadius = function() { return 2.5 },
     yDomain = 'init',
     xAxisLabelText = false,
     yAxisLabelText = false,
-    color = d3.scale.category10().range();
+    color = d3.scale.category20().range();
     dispatch = d3.dispatch('showTooltip', 'hideTooltip', 'zoomView');
 
   var x = d3.scale.linear(),
@@ -550,6 +553,8 @@ models.compositeContainer = function() {
             d.disabled = false;
           });
         }
+        // Reset the zoom
+        yDomain = 'init';
         selection.call(chart);
       });
 
@@ -635,7 +640,6 @@ models.compositeContainer = function() {
       // Fill the legend
       wrap.select('.legendWrap')
         .datum(data)
-        .attr('transform', 'translate(0,' + (-legend.height()) +')')
         .call(legend);
 
       // Figure out the size of the y axis labels and potentially adjust the
@@ -661,10 +665,20 @@ models.compositeContainer = function() {
       var left = margin.left + yLabelLength;
 
       // Reset the location and the height of this container based on
-      // the placement of the legend
-      margin.top = legend.height();  //need to re-render to see update
+      // the placement of the legend.  The 7 pixels here is the difference
+      // between the vertical center and the top of the first legend line, ie.
+      // we need to increase the margin slightly so as to make sure the 
+      // legend shows up within the svg container.  We want to maintain a
+      // consistent height of the chart itself, so adjust the svg container
+      // to accomodate large legends
+      var current = height - margin.top;
+      margin.top = legend.height() + 7;
+      height = current + margin.top;
+      d3.select(this).attr('height', height);
       var g = wrap.select('g')
         .attr('transform', 'translate(' + left + ',' + margin.top + ')');
+      wrap.select('.legendWrap')
+        .attr('transform', 'translate(0,' + (-legend.height()) + ')')
 
       // Set the zoom behavior
       var zoom = d3.behavior.zoom()
@@ -686,7 +700,7 @@ models.compositeContainer = function() {
         .color(
           data
             // map color by index if not present
-            .map(function(d, i) { return d.color || color[i % 10]; })
+            .map(function(d, i) { return d.color || color[i % 20]; })
             // filter out disabled data
             .filter(function(d, i) { return !data[i].disabled })
         );
@@ -709,11 +723,12 @@ models.compositeContainer = function() {
         .data([xAxisLabelText || null]);
       xAxisLabel.enter().append('text')
         .attr('class', 'axislabel')
-        .attr('text-anchor', 'middle')
-        .attr('x', x.range()[1] / 2)
-        .attr('y', margin.bottom - 15);
+        .attr('text-anchor', 'middle');
       xAxisLabel.exit().remove();
-      xAxisLabel.text(function(d) { return d; });
+      xAxisLabel
+        .attr('x', x.range()[1] / 2)
+        .attr('y', margin.bottom - 15)
+        .text(function(d) { return d; });
 
       // Set the x axis ticks 
       g.select('.x.axis')
@@ -816,7 +831,7 @@ models.compositeContainer = function() {
   return chart;
 };
 
-function updateChart(filteredData) {
+var updateChart = function(filteredData) {
   // Fill with new data
   var svg = d3.select('#chart svg')
     .datum(filteredData);
@@ -826,4 +841,12 @@ function updateChart(filteredData) {
 
   // Redraw the chart
   svg.call(compositeContainer);
+};
+
+var resizeChart = function(filteredData) {
+  // Get the new size of the window and redraw
+  var width = parseInt(d3.select("#chart").style("width"), 10);
+  compositeContainer.width(width);
+  d3.select('#chart svg').attr('width', width);
+  updateChart(filteredData);
 };

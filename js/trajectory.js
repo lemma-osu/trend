@@ -131,6 +131,11 @@ $(document).ready(function() {
             .width(width)
             .height(height);
 
+        // Create a resize handler
+        d3.select(window).on('resize', function() {
+          resizeChart(filteredData.data); 
+        });
+
         // Render the chart
         var svg = d3.select('#chart svg')
           .datum(filteredData.data)

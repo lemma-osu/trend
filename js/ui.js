@@ -62,7 +62,7 @@ var createModalDropdownMenu = function(obj) {
   // Set up the modal menu
   var m = $('<div>')
     .attr('id', modalId)
-    .attr('class', 'ui small modal grid');
+    .attr('class', 'ui modal grid');
 
   // Create the header
   var h = $('<div>')
@@ -157,7 +157,7 @@ var createModalSliderMenu = function(obj) {
   // Set up the modal menu
   var m = $('<div>')
     .attr('id', modalId)
-    .attr('class', 'ui small modal grid');
+    .attr('class', 'ui modal grid');
 
   // Create the header
   var h = $('<div>')

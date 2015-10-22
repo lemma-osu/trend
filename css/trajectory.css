@@ -43,9 +43,11 @@ body.dimmed {
    cursor: pointer;
 }
 
-.ui.small.modal {
-   width: 350px;
-   margin: 0 0 0 -175px;
+.ui.modal {
+   width: 650px;
+   margin: 0 0 0 -325px;
+   position: absolute;
+   top: 150px;
 }
 
 .list-info {

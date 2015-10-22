@@ -19,7 +19,7 @@ function Configuration(data) {
         // category so that it can be used consistently across graphs
         if (type == 'categorical') {
           d.categories = _.object(_.map(d.categories, function(x, i) {
-            return [x.key, {'alias': x.alias, 'color': colors[i]}];
+            return [x.key, {'alias': x.alias, 'color': colors[i % 20]}];
           })); 
         }
         return [d.key, d];
