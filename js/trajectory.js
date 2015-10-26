@@ -36,6 +36,18 @@ $(document).ready(function() {
         });
       });
 
+      // Mark all the current records as 'non-grouped'
+      _.each(rawData, function(d) { d.grouped = false; });
+
+      // Calculate group data records
+      var copyData = _.clone(rawData);
+      _.each(config.catFields, function(v, k) {
+        _.each(v.groups, function(obj, group) {
+          var newData = calculateGroupData(copyData, k, group, obj.items);
+          rawData = rawData.concat(newData);
+        });
+      });
+
       // Find the unique values of all categorical variables - this also
       // initializes the selected strata to be all categories in each
       // stratum
@@ -54,42 +66,72 @@ $(document).ready(function() {
 
       // Create modal menus for all strata
       _.each(_.keys(config.strata), function(k, i) {
-        var items = _.map(config.strata[k], function(d) {
-          var alias = config.catFields[k].categories[d].alias;
-          return { key: d, alias: d + ': ' + alias }
+        // Container for all dropdown items
+        var dropdownItems = [];
+
+        // First, collect all the group items.  If any are present, push
+        // these to the menu and provide headings and a divider
+        var groupKeys = _.filter(config.strata[k], function(d) {
+          return _.has(config.catFields[k].groups, d);
         });
+        if (groupKeys.length) {
+          dropdownItems.push({ type: 'header', key: 'Groups' });
+          var groupItems = _.map(groupKeys, function(d) {
+            var alias = config.catFields[k].groups[d].alias;
+            return { type: 'group', key: d, alias: d + ': ' + alias }
+          });
+          dropdownItems = dropdownItems.concat(groupItems);
+          dropdownItems.push({ type: 'divider' });
+        }
+        dropdownItems.push({ type: 'header', key: 'Items' });
+        var itemKeys = _.filter(config.strata[k], function(d) {
+          return _.has(config.catFields[k].categories, d);
+        });
+        var items = _.map(itemKeys, function(d) {
+          var alias = config.catFields[k].categories[d].alias;
+          return { type: 'item', key: d, alias: d + ': ' + alias }
+        });
+        dropdownItems = dropdownItems.concat(items);
         createModalDropdownMenu({
           modalId: 'focus' + i + '-modal',
           header: config.catFields[k].alias,
           actions: actions,
           f: focusDropdownChange,
           dropdownId: k,
-          dropdownItems: items,
+          dropdownItems: dropdownItems,
           multiple: true,
           defaultText: 'All'
         });
       });
 
       // Create a modal menu with dropdown for series
+      var dropdownItems = _.map(_.keys(config.catFields), function(k, i) {
+        var alias = config.catFields[k].alias;
+        return { type: 'item', key: k, alias: alias }
+      });
       createModalDropdownMenu({
         modalId: 'series-modal',
         header: 'Series',
         actions: actions,
         f: seriesDropdownChange,
         dropdownId: 'series-dropdown',
-        dropdownItems: config.catFields,
+        dropdownItems: dropdownItems,
         multiple: false,
         defaultText: 'None'
       });
      
       // Create a modal menu with dropdown for variable 
+      dropdownItems = _.map(_.keys(config.contFields), function(k, i) {
+        var alias = config.contFields[k].alias;
+        return { type: 'item', key: k, alias: alias }
+      });
       createModalDropdownMenu({
         modalId: 'variable-modal',
         header: 'Variable',
         actions: actions,
         f: variableDropdownChange,
         dropdownId: 'variable-dropdown',
-        dropdownItems: config.contFields,
+        dropdownItems: dropdownItems,
         multiple: false,
         defaultText: 'None'
       });

@@ -21,6 +21,11 @@ function Configuration(data) {
           d.categories = _.object(_.map(d.categories, function(x, i) {
             return [x.key, {'alias': x.alias, 'color': colors[i % 20]}];
           })); 
+          d.groups = _.object(_.map(d.groups, function(x, i) {
+            return [x.key, {
+              'alias': x.alias, 'color': colors[i % 20], 'items': x.items
+            }];
+          }));
         }
         return [d.key, d];
       }));
@@ -94,6 +99,62 @@ function Configuration(data) {
   this.initialize(data);
 };
 
+var calculateGroupData = function(data, key, g, items) {
+  // Filter to just the items in this group.  At the same time, remove the
+  // key from each record to make grouping easier 
+  var filteredData = _.chain(data)
+    .filter(function(d) { return _.contains(items, d[key]); })
+    .map(function(d) { return _.omit(d, key); })
+    .value();
+
+  // Group by the remaining categorical fields.  This will create groups for
+  // each unique combination.  Note that the group key becomes a
+  // comma-delimited string.
+  var contKeys = _.keys(config.contFields);
+  var groups = _.groupBy(filteredData, function(d) {
+    return _.values(_.omit(d, contKeys));
+  });
+  var groupKeys = _.keys(_.omit(filteredData[0], contKeys));
+
+  // Create a new data record for each combination and this group.
+  var areaField = config.selected.area.key;
+  var newData = [];
+  _.each(groups, function(groupData, groupKey) {
+    obj = {};
+    // Set the values for the categorical variables, setting the key 
+    // currently being considered to the group value (g)
+    obj[key] = g;
+
+    // Mark this as a grouped record
+    obj.grouped = true;
+
+    var group = groupKey.split(','); 
+    _.each(_.zip(groupKeys, group), function(item, j) {
+      obj[item[0]] = item[1]; 
+    });
+
+    // Calculate the total area once
+    var totalArea = _.reduce(groupData, function(memo, d) {
+      return memo + d[areaField];
+    }, 0);
+
+    // For each continuous variable, calculate either the weighted mean
+    // or sum of area 
+    _.each(config.contFields, function(v, k) {
+      if (k == areaField) {
+        obj[k] = totalArea;
+      } else {
+        var total = _.reduce(groupData, function(memo, d) {
+          return memo + (d[areaField] * d[k]);
+        }, 0);
+        obj[k] = total / totalArea;
+      }
+    });
+    newData.push(obj);
+  });
+  return newData;
+};
+
 /**
  * Filter data based on the current selection.  This is called on most
  * user interactions, whenever parameters are changed
@@ -102,20 +163,39 @@ function Configuration(data) {
  * @return (object) - The data to graph and the current number of records
  */
 var filterData = function(config) {
+  // Aliases to selected data
+  var s = config.selected;
+  var seriesVar = s.series.key;
+
   // Start with the full data set and filter the records based on the 
   // presence of the allowed focus filters for each stratum.  This doesn't
   // seem very efficient in that it has to iterate over each stratum.
   var data = rawData;
-  _.each(config.selected.focus, function(v, k) {
-    data = _.filter(data, function(d) { return _.contains(v, d[k]); });
+  _.each(s.focus, function(v, k) {
+    if (k == seriesVar) {
+      // If this stratum matches the series variable, collect all records
+      cats = v;
+    } else {
+      // Otherwise find the unique set of categories covered by this stratum
+      // and we use this to filter for only non-grouped records below
+      var cats = [];
+      _.each(v, function(d) {
+        var groups = config.catFields[k].groups;
+        if (_.contains(_.keys(groups), d)) {
+          cats = cats.concat(groups[d].items);
+        } else {
+          cats.push(d);
+        }
+      });
+      cats = _.uniq(cats);
+    }
+    data = _.filter(data, function(d) { return _.contains(cats, d[k]); });
   });
 
   var recordCount = data.length;
 
   // Now that we have the matching records, group by the unique values in 
   // the series data and return 
-  var s = config.selected;
-  var seriesVar = s.series.key;
   var series = _.chain(data)
     .map(function(d) { return d[seriesVar]; })
     .uniq()
@@ -133,8 +213,16 @@ var filterData = function(config) {
   var minYear = s.years[0];
   var maxYear = s.years[1];
 
-  // Get the categories in this series for the color choices
-  var cats = config.catFields[seriesVar].categories;
+  // Get the color choices
+  var groups = config.catFields[seriesVar].groups;
+  var items = config.catFields[seriesVar].categories;
+  var colors = _.object(_.map(series, function(d) {
+    if (_.contains(_.keys(groups), d)) {
+      return [d, groups[d].color];
+    } else {
+      return [d, items[d].color];
+    }
+  }));
 
   // Get the data for each series value.  This is a somewhat convoluted bit
   // of code, but it first maps a function over all unique series which
@@ -145,8 +233,16 @@ var filterData = function(config) {
   // should be the same size as the unique number of years.  These values
   // are the area weighted average of continuous variable (contVar).  
   var seriesData = series.map(function(s) {
-    // Filter for series
-    var subset = _.filter(data, function(d) { return d[seriesVar] == s; });
+    // Filter for this series - if this is a grouped series, we include all 
+    // records, otherwise only include records that are not grouped to avoid
+    // double-counting
+    var subset = _.filter(data, function(d) {
+      if (_.contains(_.keys(groups), s)) {
+        return d[seriesVar] == s;
+      } else { 
+        return d[seriesVar] == s && d.grouped == false;
+      }
+    });
 
     // Filter for years
     subset = _.filter(subset, function(d) { 
@@ -155,7 +251,7 @@ var filterData = function(config) {
     var years = _.uniq(_.map(subset, function(d) { return +d[yearVar]; }));
     years = _.sortBy(years, function(y) { return y; });
 
-    var color = cats[s].color;
+    var color = colors[s];
     if (contVar != countVar) {
       return {
         label: s,

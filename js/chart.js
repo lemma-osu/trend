@@ -618,8 +618,13 @@ models.compositeContainer = function() {
         yDomain = 'set';
         var extent = d3.extent(d3.merge(series), function(d) { return d[1]; }) 
         var m = (extent[1] - extent[0]) / 90.0;
-        var dMin = extent[1] - m * 95.0;
-        var dMax = m * 100.0 + extent[0]
+        if (m != 0) {
+          var dMin = extent[1] - m * 95.0;
+          var dMax = m * 100.0 + extent[0]
+        } else {
+          var dMin = extent[0] * 0.95;
+          var dMax = extent[0] * 1.05;
+        }
         y.domain([dMin, dMax]);
       }
 

@@ -25,10 +25,29 @@ var createDropdown = function(id, items, multiple, defaultText) {
     'class': 'menu'
   });
   _.each(items, function(item, i) {
-    var choice = $('<div>').attr({
-      'class': 'item',
-      'data-value': item.key
-    }).text(item.alias);
+    var choice;
+    switch(item.type) {
+      case 'group':
+      case 'item':
+        choice = $('<div>').attr({
+          'class': 'item',
+          'data-value': item.key
+        }).text(item.alias);
+        break;
+      case 'header':
+        choice = $('<div>').attr({
+          'class': 'header'
+        }).text(item.key);
+        break;
+      case 'divider':
+        choice = $('<div>').attr({
+          'class': 'divider'
+        });
+        break;
+      default:
+        var msg = 'Unknown dropdown item type';
+        throw Error(msg);
+    }
     $(menu).append(choice);
   });
   $(dropdown).append(menu);
@@ -278,9 +297,10 @@ var focusDropdownChange = function(dd) {
   // Split the values in d, sort, then cast back to string
   var choices = _.sortBy(values.split(","), function(x) { return x });
 
-  // Find the element in the configuration that matches this id and get the
-  // list of all values from it
-  var allCats = config.strata[id];
+  // Find all data items in this list
+  var allCats = _.map($(dd).find('.item'), function(d) {
+    return $(d).attr('data-value');
+  });
 
   // Flag for whether or not all categories are selected
   var all = false;
