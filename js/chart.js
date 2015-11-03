@@ -362,9 +362,17 @@ models.lineContainer = function() {
       pointPaths.exit().remove();
       pointPaths
         .attr('clip-path', function(d) {
-          return 'url(#clip-' + id + '-' + d.series + '-' + d.point + ')';
+          try {
+            return 'url(#clip-' + id + '-' + d.series + '-' + d.point + ')';
+          } catch(e) {
+          }
         })
-        .attr('d', function(d) { return 'M' + d.data.join(',') + 'Z'; })
+        .attr('d', function(d) {
+          try {
+            return 'M' + d.data.join(',') + 'Z';
+          } catch(e) {
+          }
+        })
         .on('mouseover', function(d) {
           dispatch.pointMouseover({
             point: data[d.series].data[d.point],
@@ -654,7 +662,7 @@ models.compositeContainer = function() {
       if (y.domain()[1] > 1000.0) {
         yAxis.tickFormat(d3.format('.2e'));
       } else {
-        yAxis.tickFormat(d3.format('g'));
+        yAxis.tickFormat(d3.format('.4f'));
       }
 
       // Get the maximum size of the labels
