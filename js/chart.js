@@ -1,4 +1,7 @@
+// JSHint options
+/*globals $, compositeContainer, config, d3, jQuery, tooltip*/
 (function($) {
+  'use strict';
   // Attach a new object to the window
   var tooltip = window.tooltip = {};
 
@@ -106,6 +109,7 @@ var models = {};
 
 // Legend elements
 models.legendContainer = function() {
+  'use strict';
   // Set up the positioning and color of the legend.  Dispatch is a d3 way to
   // loosely couple separate components with a single event
   var margin = {top: 0, right: 0, bottom: 5, left: 10},
@@ -127,7 +131,7 @@ models.legendContainer = function() {
 
       // Set the data element of the g.legend container
       var wrap = d3.select(this).selectAll('g.legend').data([data]);
-      var gEnter = wrap.enter().append('g')
+      wrap.enter().append('g')
         .attr('class', 'legend')
         .append('g');
 
@@ -200,7 +204,7 @@ models.legendContainer = function() {
       height += margin.top + ypos;
     });
     return chart;
-  };
+  }
 
   chart.dispatch = dispatch;
 
@@ -237,10 +241,11 @@ models.legendContainer = function() {
 };
 
 models.lineContainer = function() {
+  'use strict';
   var margin = {top: 0, right: 0, bottom: 0, left: 0},
     width = 960,
     height = 500,
-    dotRadius = function() { return 2.5 },
+    dotRadius = function() { return 2.5; },
     color = d3.scale.category20().range(),
     id = Math.floor(Math.random() * 10000),
     x = d3.scale.linear(),
@@ -249,7 +254,7 @@ models.lineContainer = function() {
     x0,
     y0;
 
-  function chart(selection) {
+  var chart = function(selection) {
     // Selection is one array with all series arrays within it
     selection.each(function(data) {
       var seriesData = data.map(function(d) { return d.data; });
@@ -292,19 +297,19 @@ models.lineContainer = function() {
       gEnter.append('g').attr('class', 'point-paths');
 
       // Translate the container
-      var g = wrap.select('g')
+      wrap.select('g')
         .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
       // Create a border for the series data
       gEnter.append('rect')
-        .attr('id', 'chart-border')
+        .attr('id', 'chart-border');
 
       // Create a clip-path for the series data
       gEnter.append('clipPath')
           .attr('id', 'clip-border')
         .append('rect');
 
-      var voronoiClip =  gEnter.append('g')
+      gEnter.append('g')
         .attr('class', 'voronoi-clip')
         .append('clipPath')
           .attr('id', 'voronoi-clip-path-' + id)
@@ -352,7 +357,7 @@ models.lineContainer = function() {
           'data': d,
           'series': vertices[i][2],
           'point': vertices[i][3]
-        }
+        };
       });
 
       var pointPaths = wrap.select('.point-paths').selectAll('path')
@@ -406,7 +411,7 @@ models.lineContainer = function() {
 
       // Bring in the line containers
       var lines = wrap.select('.lines').selectAll('.line')
-        .data(function(d) { return d }, function(d) { return d.label });
+        .data(function(d) { return d; }, function(d) { return d.label; });
       lines.enter().append('g')
         .attr('clip-path', 'url(#clip-border)')
         .style('stroke-opacity', 1e-6)
@@ -415,40 +420,40 @@ models.lineContainer = function() {
         .style('stroke-opacity', 1e-6)
         .style('fill-opacity', 1e-6)
         .remove();
-      lines.attr('class', function(d,i) { return 'line line-' + i })
-        .classed('hover', function(d) { return d.hover })
-        .style('fill', function(d,i) { return d.color || color[i % 20] })
-        .style('stroke', function(d,i) { return d.color || color[i % 20] })
+      lines.attr('class', function(d,i) { return 'line line-' + i; })
+        .classed('hover', function(d) { return d.hover; })
+        .style('fill', function(d,i) { return d.color || color[i % 20]; })
+        .style('stroke', function(d,i) { return d.color || color[i % 20]; });
       lines.transition()
         .style('stroke-opacity', 1)
-        .style('fill-opacity', .5);
+        .style('fill-opacity', 0.5);
 
       // Insert the paths into the line containers
       var paths = lines.selectAll('path')
-        .data(function(d) { return [d.data] });
+        .data(function(d) { return [d.data]; });
       paths.enter().append('path')
         .attr('d', d3.svg.line()
-          .x(function(d) { return x0(d[0]) })
-          .y(function(d) { return y0(d[1]) })
+          .x(function(d) { return x0(d[0]); })
+          .y(function(d) { return y0(d[1]); })
         );
       paths.exit().remove();
       paths.transition()
         .attr('d', d3.svg.line()
-          .x(function(d) { return x(d[0]) })
-          .y(function(d) { return y(d[1]) })
+          .x(function(d) { return x(d[0]); })
+          .y(function(d) { return y(d[1]); })
         );
 
       // Add points to the line containers
       var points = lines.selectAll('circle.point')
-        .data(function(d) { return d.data });
+        .data(function(d) { return d.data; });
       points.enter().append('circle')
-        .attr('cx', function(d) { return x0(d[0]) })
-        .attr('cy', function(d) { return y0(d[1]) });
+        .attr('cx', function(d) { return x0(d[0]); })
+        .attr('cy', function(d) { return y0(d[1]); });
       points.exit().remove();
-      points.attr('class', function(d,i) { return 'point point-' + i });
+      points.attr('class', function(d, i) { return 'point point-' + i; });
       points.transition()
-        .attr('cx', function(d) { return x(d[0]) })
-        .attr('cy', function(d) { return y(d[1]) })
+        .attr('cx', function(d) { return x(d[0]); })
+        .attr('cy', function(d) { return y(d[1]); })
         .attr('r', dotRadius());
     });
     x0 = x;
@@ -499,7 +504,7 @@ models.lineContainer = function() {
       return dotRadius; 
     dotRadius = d3.functor(_);
     return chart;
-  }
+  };
 
   chart.color = function(_) {
     if (!arguments.length) return color;
@@ -517,27 +522,28 @@ models.lineContainer = function() {
 };
 
 models.compositeContainer = function() {
+  'use strict';
   var margin = {top: 0, right: 20, bottom: 50, left: 40},
     width = 960,
     height = 500,
-    dotRadius = function() { return 2.5 },
+    dotRadius = function() { return 2.5; },
     yDomain = 'init',
     xAxisLabelText = false,
     yAxisLabelText = false,
-    color = d3.scale.category20().range();
+    color = d3.scale.category20().range(),
     dispatch = d3.dispatch('showTooltip', 'hideTooltip', 'zoomView');
 
   var x = d3.scale.linear(),
     y = d3.scale.linear(),
     xAxis = d3.svg.axis().scale(x).orient('bottom').tickFormat(d3.format('d')),
-    yAxis = d3.svg.axis().scale(y).orient('left');
+    yAxis = d3.svg.axis().scale(y).orient('left'),
     legend = models.legendContainer().color(color),
     lines = models.lineContainer();
 
   // This gets called with the single svg element, so the data size of
   // selection is only 1 at this point, even though it contains the data for
   // all arrays
-  function chart(selection) {
+  var chart = function(selection) {
     selection.each(function(data) {
       yAxisLabelText = config.selected.variable.alias + ' (' + 
         config.selected.variable.units + ')';
@@ -556,7 +562,7 @@ models.compositeContainer = function() {
       // Event code
       legend.dispatch.on('legendClick', function(d, i) { 
         d.disabled = !d.disabled;
-        if (!data.filter(function(d) { return !d.disabled }).length) {
+        if (!data.filter(function(d) { return !d.disabled; }).length) {
           data.forEach(function(d) {
             d.disabled = false;
           });
@@ -603,11 +609,11 @@ models.compositeContainer = function() {
           formatter = d3.format(".04f");
 
         var content =
-          '<p>' 
-            + e.series.label + ', ' 
-            + e.point[0] + ', '
-            + formatter(e.point[1])
-            + '</p>';
+          '<p>' +
+            e.series.label + ', ' +
+            e.point[0] + ', ' +
+            formatter(e.point[1]) +
+          '</p>';
         tooltip.show([left, top], content);
       });
 
@@ -624,14 +630,15 @@ models.compositeContainer = function() {
       y.range([height - margin.top - margin.bottom, 0]);
       if (yDomain == 'init') {
         yDomain = 'set';
-        var extent = d3.extent(d3.merge(series), function(d) { return d[1]; }) 
+        var extent = d3.extent(d3.merge(series), function(d) { return d[1]; });
         var m = (extent[1] - extent[0]) / 90.0;
-        if (m != 0) {
-          var dMin = extent[1] - m * 95.0;
-          var dMax = m * 100.0 + extent[0]
+        var dMin, dMax;
+        if (m !== 0) {
+          dMin = extent[1] - m * 95.0;
+          dMax = m * 100.0 + extent[0];
         } else {
-          var dMin = extent[0] * 0.95;
-          var dMax = extent[0] * 1.05;
+          dMin = extent[0] * 0.95;
+          dMax = extent[0] * 1.05;
         }
         y.domain([dMin, dMax]);
       }
@@ -691,7 +698,7 @@ models.compositeContainer = function() {
       var g = wrap.select('g')
         .attr('transform', 'translate(' + left + ',' + margin.top + ')');
       wrap.select('.legendWrap')
-        .attr('transform', 'translate(0,' + (-legend.height()) + ')')
+        .attr('transform', 'translate(0,' + (-legend.height()) + ')');
 
       // Set the zoom behavior
       var zoom = d3.behavior.zoom()
@@ -715,7 +722,7 @@ models.compositeContainer = function() {
             // map color by index if not present
             .map(function(d, i) { return d.color || color[i % 20]; })
             // filter out disabled data
-            .filter(function(d, i) { return !data[i].disabled })
+            .filter(function(d, i) { return !data[i].disabled; })
         );
 
       // Sets the number of axis ticks and their size
@@ -845,6 +852,7 @@ models.compositeContainer = function() {
 };
 
 var updateChart = function(filteredData) {
+  'use strict';
   // Fill with new data
   var svg = d3.select('#chart svg')
     .datum(filteredData);
@@ -857,6 +865,7 @@ var updateChart = function(filteredData) {
 };
 
 var resizeChart = function(filteredData) {
+  'use strict';
   // Get the new size of the window and redraw
   var width = parseInt(d3.select("#chart").style("width"), 10);
   compositeContainer.width(width);

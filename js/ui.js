@@ -1,3 +1,6 @@
+// JSHint options
+/*globals _, $, config, convertToCSV, filterData:true, filteredData, updateChart*/
+
 /**
  * Create Semantic UI dropdown menu 
  * @param {string} id - The ID to set on the dropdown element
@@ -8,12 +11,13 @@
  * @returns {div} - The enclosing HTML div tag for the dropdown
  */
 var createDropdown = function(id, items, multiple, defaultText) {
+  'use strict';
   var dropdownDiv = $('<div>').attr({
     'class': 'sixteen wide column'
   });
-  var classes = multiple
-    ? 'ui fluid multiple search selection dropdown'
-    : 'ui fluid search selection dropdown';
+  var classes = multiple ?
+    'ui fluid multiple search selection dropdown' :
+    'ui fluid search selection dropdown';
   var dropdown = $('<div>').attr({
     'id': id,
     'class': classes 
@@ -69,6 +73,7 @@ var createDropdown = function(id, items, multiple, defaultText) {
  *   defaultText - Default text to display in the dropdown
  */
 var createModalDropdownMenu = function(obj) {
+  'use strict';
   var modalId = obj.modalId || 'modal';
   var header = obj.header || 'Header';
   var actions = obj.actions || null;
@@ -130,6 +135,7 @@ var createModalDropdownMenu = function(obj) {
  * @returns {div} - The enclosing HTML div tag for the slider
  */
 var createRangeSlider = function(sliderId, range) {
+  'use strict';
   var rangeMin = range[0];
   var rangeMax = range[1];
   var sliderDiv = $('<div>').attr({
@@ -165,6 +171,7 @@ var createRangeSlider = function(sliderId, range) {
  *   sliderId - ID of the slider element 
  */
 var createModalSliderMenu = function(obj) {
+  'use strict';
   var modalId = obj.modalId || 'modal';
   var header = obj.header || 'Header';
   var actions = obj.actions || null;
@@ -199,12 +206,69 @@ var createModalSliderMenu = function(obj) {
   });
 };
 
+var createDialog = function(label, inputId) {
+  'use strict';
+  var dialogDiv = $('<div>').attr({
+    'class': 'sixteen wide column'
+  });
+  var labelDiv = $('<div>').attr({
+    'class': 'ui label'
+  }).text(label);
+  var input = $('<input>').attr({
+    'type': 'text',
+  });
+  var dialog = $('<div>').attr({
+    'id': inputId, 
+    'class': 'ui labeled fluid input'
+  });
+  $(dialog).append(labelDiv);
+  $(dialog).append(input);
+
+  $(dialogDiv).append(dialog);
+  return dialogDiv;
+};
+
+var createModalDialogMenu = function(obj) {
+  'use strict';
+  var modalId = obj.modalId || 'modalId';
+  var inputId = obj.inputId || 'inputId';
+  var header = obj.header || 'Header';
+  var label = obj.label || 'Label';
+  var actions = obj.actions || null;
+  var f = obj.f || null;
+
+  // Set up the modal menu
+  var m = $('<div>')
+    .attr('id', modalId)
+    .attr('class', 'ui modal grid');
+
+  // Create the header
+  var h = $('<div>')
+    .attr('class', 'header')
+    .text(header);
+
+  // Create a input dialog box 
+  var d = createDialog(label, inputId);
+  m.append(h, d, actions.clone());
+
+  // Set the events for the modal form
+  m.modal({
+    autofocus: false,
+    onApprove: function() {
+      // Get the value in the dialog box and call the function
+      var val = d.find('input').first().val(); 
+      f(val);
+    }
+  });
+};
+
 /**
  * Initialize the data shown in the information panel associated with the
  * different stratifying variables.  This is called from initInformation
  * @param {object} config - The main configuration object
  */
 var initFocusInformation = function(config) {
+  'use strict';
   // Initialize the container to show each stratum as a column with the 
   // currently selected items from each stratum shown as a list
   var focus = config.selected.focus;
@@ -240,6 +304,7 @@ var initFocusInformation = function(config) {
  * @param {object} config - The main configuration object
  */
 var initInformation = function(config) {
+  'use strict';
   // Initialize the focus container
   initFocusInformation(config);
 
@@ -259,6 +324,9 @@ var initInformation = function(config) {
   $('#year-link').on('click', function() {
     $('#year-modal').modal('show');
   });
+  $('#export-link').on('click', function() {
+    $('#export-modal').modal('show');
+  });
 };
 
 /**
@@ -267,6 +335,7 @@ var initInformation = function(config) {
  * @param {string} id - The id of the stratum from which to pull all values
  */
 var selectAllElements = function(m, id) {
+  'use strict';
   var dd = $(m).find('.ui.dropdown');
   var values = config.strata[id];
   dd.dropdown('set exactly', values);
@@ -277,6 +346,7 @@ var selectAllElements = function(m, id) {
  * @param {div} m - The div object of the modal manu
  */
 var selectNoElements = function(m) {
+  'use strict';
   var dd = $(m).find('.ui.dropdown');
   dd.dropdown('set exactly', []);
 };
@@ -288,6 +358,7 @@ var selectNoElements = function(m) {
  * @param {div} dd - The dropdown object (div) 
  */
 var focusDropdownChange = function(dd) {
+  'use strict';
   // Get the ID associated with this dropdown
   var id = dd.attr("id");
 
@@ -295,7 +366,7 @@ var focusDropdownChange = function(dd) {
   var values = dd.dropdown('get value');
 
   // Split the values in d, sort, then cast back to string
-  var choices = _.sortBy(values.split(","), function(x) { return x });
+  var choices = _.sortBy(values.split(","), function(x) { return x; });
 
   // Find all data items in this list
   var allCats = _.map($(dd).find('.item'), function(d) {
@@ -307,7 +378,7 @@ var focusDropdownChange = function(dd) {
 
   // Update the config object and determine if all categories are currently
   // selected
-  if (choices.length > 0 && choices[0] != "") {
+  if (choices.length > 0 && choices[0] !== "") {
     config.selected.focus[id] = choices;
 
     // If all choices are selected, set the all flag to true (so that we
@@ -349,6 +420,7 @@ var focusDropdownChange = function(dd) {
  * @param {div} dd - The dropdown object (div) 
  */
 var seriesDropdownChange = function(dd) {
+  'use strict';
   var value = dd.dropdown('get value');
   config.selected.series = config.catFields[value]; 
   $('#series-link').text(config.selected.series.alias);
@@ -363,6 +435,7 @@ var seriesDropdownChange = function(dd) {
  * @param {div} dd - The dropdown object (div) 
  */
 var variableDropdownChange = function(dd) {
+  'use strict';
   var value = dd.dropdown('get value');
   config.selected.variable = config.contFields[value];
   $('#variable-link').text(config.selected.variable.alias);
@@ -378,6 +451,7 @@ var variableDropdownChange = function(dd) {
  * @param {element} ui - The ui element that was operated on
  */
 var yearSliderChange = function(event, ui) {
+  'use strict';
   var rangeStr = ui.values[0] + " - " + ui.values[1];
   $('#range').text("Range: " + rangeStr);
 };
@@ -389,6 +463,7 @@ var yearSliderChange = function(event, ui) {
  * @param {element} ui - The ui element that was operated on
  */
 var yearSliderStop = function(event, ui) {
+  'use strict';
   var years = $('#year-slider').slider('values');
   var yearRangeStr = years[0] + " - " + years[1];
   config.selected.years[0] = +years[0];
@@ -399,6 +474,17 @@ var yearSliderStop = function(event, ui) {
   updateChart(filteredData.data);
 };
 
+var downloadFile = function(csvFile) {
+  'use strict';
+  var uri = convertToCSV(config, filteredData);
+  var link = document.createElement('a');
+  link.href = uri;
+  link.download = csvFile;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
 /**
  * Update the count of records that currently figure in to the statistics
  * calculation.  If the count is zero, the information box is triggered
@@ -406,8 +492,9 @@ var yearSliderStop = function(event, ui) {
  * @param {int} count - The currently selected number of records
  */
 var updateRecordCount = function(count) {
+  'use strict';
   $('#matching-count').text(count);
-  if (count == 0) {
+  if (count === 0) {
     $('#parameters').attr({'class': 'ui negative message'});
   } else {
     $('#parameters').attr({'class': 'ui info message'});

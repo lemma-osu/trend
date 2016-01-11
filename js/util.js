@@ -1,14 +1,17 @@
+// JSHint options
+/*globals _, d3, config, rawData,*/
+
 /**
  * Main configuration object - this stores all the metadata information
  * describing the trajectory data and identifies the current selection.
  * @param {object} data - The JSON specification of the trajectory data
  */
-function Configuration(data) {
-
+var Configuration = function(data) {
+  'use strict';
   // Read in the JSON specification of the fields and separate them into 
   // separate classes
   this.initialize = function(data) {
-    function getFields(type) { 
+    var getFields = function(type) { 
       var colors = d3.scale.category20().range();
       var f = _.filter(data.variables, function(d) {
         return d.type == type;
@@ -37,8 +40,9 @@ function Configuration(data) {
     this.catFields = getFields('categorical');
     this.contFields = getFields('continuous');
     var areaFields = getFields('area');
+    var msg;
     if (_.keys(areaFields).length != 1) {
-      var msg = 'There must be exactly one area field';
+      msg = 'There must be exactly one area field';
       throw Error(msg); 
     }
     // Push the area field into the object of allowable continuous fields
@@ -48,7 +52,7 @@ function Configuration(data) {
     // Do the same with the year field
     var yearFields = getFields('year');
     if (_.keys(yearFields).length != 1) {
-      var msg = 'There must be exactly one year field';
+      msg = 'There must be exactly one year field';
       throw Error(msg); 
     }
 
@@ -100,6 +104,7 @@ function Configuration(data) {
 };
 
 var calculateGroupData = function(data, key, g, items) {
+  'use strict';
   // Filter to just the items in this group.  At the same time, remove the
   // key from each record to make grouping easier 
   var filteredData = _.chain(data)
@@ -120,7 +125,7 @@ var calculateGroupData = function(data, key, g, items) {
   var areaField = config.selected.area.key;
   var newData = [];
   _.each(groups, function(groupData, groupKey) {
-    obj = {};
+    var obj = {};
     // Set the values for the categorical variables, setting the key 
     // currently being considered to the group value (g)
     obj[key] = g;
@@ -163,6 +168,7 @@ var calculateGroupData = function(data, key, g, items) {
  * @return (object) - The data to graph and the current number of records
  */
 var filterData = function(config) {
+  'use strict';
   // Aliases to selected data
   var s = config.selected;
   var seriesVar = s.series.key;
@@ -170,7 +176,8 @@ var filterData = function(config) {
   // Start with the full data set and filter the records based on the 
   // presence of the allowed focus filters for each stratum.  This doesn't
   // seem very efficient in that it has to iterate over each stratum.
-  var data = rawData;
+  var conds = {};
+  var cats;
   _.each(s.focus, function(v, k) {
     if (k == seriesVar) {
       // If this stratum matches the series variable, collect all records
@@ -178,7 +185,7 @@ var filterData = function(config) {
     } else {
       // Otherwise find the unique set of categories covered by this stratum
       // and we use this to filter for only non-grouped records below
-      var cats = [];
+      cats = [];
       _.each(v, function(d) {
         var groups = config.catFields[k].groups;
         if (_.contains(_.keys(groups), d)) {
@@ -189,7 +196,10 @@ var filterData = function(config) {
       });
       cats = _.uniq(cats);
     }
-    data = _.filter(data, function(d) { return _.contains(cats, d[k]); });
+    conds[k] = cats;
+  });
+  var data = _.filter(rawData, function(d) { 
+    return _.every(conds, function(v, k) { return _.contains(v, d[k]); });
   });
 
   var recordCount = data.length;
@@ -224,74 +234,78 @@ var filterData = function(config) {
     }
   }));
 
-  // Get the data for each series value.  This is a somewhat convoluted bit
-  // of code, but it first maps a function over all unique series which
-  // subsets the data down to just those records with that series value.
-  // Then it finds the unique years for those records and sorts those to 
-  // ensure that the series ordering is correct.  Finally, it returns an
-  // object of the series value ('series') and an array of values that 
-  // should be the same size as the unique number of years.  These values
-  // are the area weighted average of continuous variable (contVar).  
-  var seriesData = series.map(function(s) {
-    // Filter for this series - if this is a grouped series, we include all 
-    // records, otherwise only include records that are not grouped to avoid
-    // double-counting
-    var subset = _.filter(data, function(d) {
-      if (_.contains(_.keys(groups), s)) {
-        return d[seriesVar] == s;
-      } else { 
-        return d[seriesVar] == s && d.grouped == false;
+  // Assign the data to each series.  This iterates through the records and
+  // pushes the record to the correct series if that record is not grouped
+  // on all other strata besides the one of interest (to avoid double
+  // counting).  The record also has to meet the year threshold to be
+  // assigned.  For series that represent groups, assign the record if the
+  // series matches.
+  var seriesData = _.object(series, _.map(series, function(s) { return []; }));
+  var groupKeys = _.keys(groups); 
+  _.each(data, function(d) {
+    if (d[yearVar] >= minYear && d[yearVar] <= maxYear) {
+      _.each(groupKeys, function(g) {
+        if (d[seriesVar] == g) {
+          seriesData[g].push(d);
+        }
+      });
+      if (d.grouped === false) {
+        seriesData[d[seriesVar]].push(d);
       }
-    });
+    }
+  });
 
-    // Filter for years
-    subset = _.filter(subset, function(d) { 
-      return d[yearVar] >= minYear && d[yearVar] <= maxYear; 
+  // For each series, create aggregate information from all records.  First,
+  // group the records by year, then return an object of the series
+  // label, color and an array of year, value pairs.  For area variables
+  // (e.g. countVar), values are the 'weights' themselves; for all other
+  // variables, values are an area-weighted average.
+  var seriesGroupedData = series.map(function(s) {
+    var subset = seriesData[s];
+    var yearGroups = _.groupBy(subset, function(d) {
+      return d[yearVar];
     });
-    var years = _.uniq(_.map(subset, function(d) { return +d[yearVar]; }));
-    years = _.sortBy(years, function(y) { return y; });
-
-    var color = colors[s];
     if (contVar != countVar) {
       return {
         label: s,
-        data: years.map(function(y) {
-          var subsetYear = _.filter(subset, function(d) {
-            return d[yearVar] == y;
-          });
-          var w_s = _.reduce(subsetYear, function(memo, d) {
+        color: colors[s],
+        data: _.map(yearGroups, function(items, y) {
+          var w_s = _.reduce(items, function(memo, d) {
             return memo + (d[countVar] * d[contVar]);
           }, 0);
-          var w = _.reduce(subsetYear, function(memo, d) {
+          var w = _.reduce(items, function(memo, d) {
             return memo + (d[countVar]);
           }, 0);
           return [y, w_s / w];
-        }),
-        color: color
+        })
       };
     } else {
       return {
         label: s,
-        data: years.map(function(y) {
-          var subsetYear = _.filter(subset, function(d) {
-            return d[yearVar] == y;
-          });
-          var w = _.reduce(subsetYear, function(memo, d) {
+        color: colors[s],
+        data: _.map(yearGroups, function(items, y) {
+          var w = _.reduce(items, function(memo, d) {
             return memo + (d[countVar]);
           }, 0);
           return [y, w];
-        }),
-        color: color
+        })
       };
     }
   });
-  return {data: seriesData, count: recordCount};
+  return {data: seriesGroupedData, count: recordCount};
 };
 
-function getJSONFilename(url) {
-  var fn = 'trajectory.json';
+/**
+ * Retrieve the configuration JSON filename from the query string.  The
+ * parameter in the query string is currently 'json-filename'.
+ * @param {string} url - The current URL
+ * @return (string) - If the json-filename key is specified, return the
+ *   specified filename.  Otherwise, return the default 'trajectory.json'.
+ */
+var getJSONFilename = function(url) {
+  'use strict';
   var q = url.split('?')[1];
-  if (q != undefined) {
+  if (q !== undefined) {
     q = q.split('&');
     var hash = q[0].split('=');
     if (hash[0] != 'json-filename') {
@@ -302,5 +316,57 @@ function getJSONFilename(url) {
   } else {
     return 'trajectory.json';
   }
+};
+
+/**
+ * Convert currently shown data to an MIME-encoded CSV file.  Metadata is
+ * written at the top of the file which represents the current strata being
+ * used.
+ * @param {object} config - The main configuration object which specifies
+ *   the current selection 
+ * @param {object} seriesData - The selected series data to export
+ * @return (string) - The encoded CSV file 
+ */
+var convertToCSV = function(config, seriesData) {
+  'use strict';
+  // Get aliases on the configuration
+  var s = config.selected;
+  var cf = config.catFields;
+
+  // Print out the strata
+  var result = 'STRATA\n';
+  _.each(s.focus, function(v, k) {
+    if (v === config.strata[k]) {
+      result += cf[k].alias + ':ALL\n';
+    } else {
+      result += cf[k].alias + ':' + v.join(';') + '\n';
+    }
+  });
+
+  // Print out a bit more metadata
+  result += '\nSERIES\n' + s.series.alias + '\n';
+  result += '\nYEAR_RANGE\n' + s.years.join('-') + '\n';
+  result += '\nVARIABLE\n' + s.variable.alias + ' (' + s.variable.units + ')\n';
+  result += '\n';
+
+  // Header line
+  var header = [s.series.alias];
+  var years = _.map(seriesData.data[0].data, function(d) { return d[0]; });
+  result += header.concat(years).join(',') + '\n';
+ 
+  // Now print out the actual data: series are rows, years are columns and 
+  // variable values are array elements
+  _.each(seriesData.data, function(s) {
+    // console.log(s.label);
+    var line = [ s.label ];
+    var values = _.map(s.data, function(d) { return d[1]; }).join(',');
+    result += line.concat(values).join(',') + '\n';
+  });
+
+  var encoded = 'data:application/csv;charset=utf-8,' +
+    encodeURIComponent(result);
+
+  console.log(typeof(encoded));
+  return encoded;
 };
 

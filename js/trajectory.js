@@ -1,9 +1,15 @@
+// JSHint options
+// TODO: There is probably a better way of building this that doesn't rely
+// on specifying external functions as globals
+/*globals _, $, d3, Configuration, calculateGroupData, createModalDialogMenu, createModalDropdownMenu, createModalSliderMenu, downloadFile, filterData, focusDropdownChange, getJSONFilename, initInformation, models, resizeChart, seriesDropdownChange, updateRecordCount, variableDropdownChange, yearSliderChange, yearSliderStop*/ 
+
 var config;
 var rawData,
     filteredData,
     compositeContainer;
 
 $(document).ready(function() {
+  'use strict';
 
   // Hide the main container until the data has been read in
   $('#main-container').hide();
@@ -21,7 +27,7 @@ $(document).ready(function() {
       // Ensure that all fields are accounted for from the JSON file
       var csvFields = _.keys(rawData[0]);
       if (!_.isEqual(config.getFields().sort(), csvFields.sort())) {
-        msg = 'Fields from JSON and CSV differ.  Check both files'
+        var msg = 'Fields from JSON and CSV differ.  Check both files';
         throw Error(msg);
       }
 
@@ -30,8 +36,8 @@ $(document).ready(function() {
         .union(_.keys(config.contFields), [config.selected.year.key])
         .uniq()
         .value();
-      _.forEach(rawData, function(r) {
-        _.forEach(numberFields, function(f) {
+      _.each(rawData, function(r) {
+        _.each(numberFields, function(f) {
           r[f] = +r[f];
         });
       });
@@ -78,7 +84,7 @@ $(document).ready(function() {
           dropdownItems.push({ type: 'header', key: 'Groups' });
           var groupItems = _.map(groupKeys, function(d) {
             var alias = config.catFields[k].groups[d].alias;
-            return { type: 'group', key: d, alias: d + ': ' + alias }
+            return { type: 'group', key: d, alias: d + ': ' + alias };
           });
           dropdownItems = dropdownItems.concat(groupItems);
           dropdownItems.push({ type: 'divider' });
@@ -89,7 +95,7 @@ $(document).ready(function() {
         });
         var items = _.map(itemKeys, function(d) {
           var alias = config.catFields[k].categories[d].alias;
-          return { type: 'item', key: d, alias: d + ': ' + alias }
+          return { type: 'item', key: d, alias: d + ': ' + alias };
         });
         dropdownItems = dropdownItems.concat(items);
         createModalDropdownMenu({
@@ -107,7 +113,7 @@ $(document).ready(function() {
       // Create a modal menu with dropdown for series
       var dropdownItems = _.map(_.keys(config.catFields), function(k, i) {
         var alias = config.catFields[k].alias;
-        return { type: 'item', key: k, alias: alias }
+        return { type: 'item', key: k, alias: alias };
       });
       createModalDropdownMenu({
         modalId: 'series-modal',
@@ -123,7 +129,7 @@ $(document).ready(function() {
       // Create a modal menu with dropdown for variable 
       dropdownItems = _.map(_.keys(config.contFields), function(k, i) {
         var alias = config.contFields[k].alias;
-        return { type: 'item', key: k, alias: alias }
+        return { type: 'item', key: k, alias: alias };
       });
       createModalDropdownMenu({
         modalId: 'variable-modal',
@@ -146,7 +152,17 @@ $(document).ready(function() {
         limits: config.selected.years,
         sliderId: 'year-slider'
       });
-  
+
+      // Create a modal menu for exporting a CSV file 
+      createModalDialogMenu({
+        modalId: 'export-modal',
+        inputId: 'export-id',
+        header: 'Export to CSV',
+        label: 'Enter output filename',
+        actions: actions,
+        f: downloadFile,
+      });
+
       // In the modal menus, set the selected values from config
       var s = config.selected;
       $('#series-dropdown').dropdown('set selected', s.series.key);
@@ -160,7 +176,7 @@ $(document).ready(function() {
 
       // Finished loading - reveal the form
       $('#main-container').fadeIn(500, function() {
-        // $('.dimmer').fadeOut();
+        $('.dimmer').fadeOut();
 
         // Get width of the chart element and set height to static for now
         var width = $('#chart').width(),
@@ -179,7 +195,7 @@ $(document).ready(function() {
         });
 
         // Render the chart
-        var svg = d3.select('#chart svg')
+        d3.select('#chart svg')
           .datum(filteredData.data)
           .attr('width', width)
           .attr('height', height)

@@ -11,7 +11,7 @@
   <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.4/semantic.min.js"></script>
-  <script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/lodash.js/3.10.1/lodash.min.js"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
   <script src="js/util.js"></script>
   <script src="js/ui.js"></script>
@@ -19,9 +19,9 @@
 </head>
 
 <body>
-  <!-- div class="ui active dimmer">
+  <div class="ui active dimmer">
     <div class="ui text loader">Loading</div>
-  </div -->
+  </div>
   <div id="main-container">
     <h1 class="ui header">GNN Trend Tool</h1>
     <div class="ui grid">
@@ -52,6 +52,9 @@
                   <div class="list-info">
                     <span>Matching Records: </span>
                     <span id="matching-count"></span>
+                  </div>
+                  <div class="export-csv">
+                    <span id="export-link" class='modal-link'>Export to CSV</span>
                   </div>
                 </div>
               </div>
