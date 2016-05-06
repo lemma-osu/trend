@@ -56,6 +56,14 @@ var Configuration = function(data) {
       throw Error(msg); 
     }
 
+    // Total fields - variables that represent counts that should be totalled
+    // across individual records, rather than taking a weighted average
+    var totalFields = getFields('total');
+    var ref = this.contFields;
+    _.each(totalFields, function(f) {
+        ref[f.key] = f;
+    });
+
     // Initialize selected values
     this.selected.series = this.catFields[_.keys(this.catFields)[0]];
     this.selected.variable = this.contFields[_.keys(this.contFields)[0]];
@@ -214,6 +222,7 @@ var filterData = function(config) {
 
   // Get the continuous variable
   var contVar = s.variable.key;
+  var contVarType = config.contFields[contVar].type;
 
   // Get the count variable
   var countVar = s.area.key;
@@ -266,19 +275,32 @@ var filterData = function(config) {
       return d[yearVar];
     });
     if (contVar != countVar) {
-      return {
-        label: s,
-        color: colors[s],
-        data: _.map(yearGroups, function(items, y) {
-          var w_s = _.reduce(items, function(memo, d) {
-            return memo + (d[countVar] * d[contVar]);
-          }, 0);
-          var w = _.reduce(items, function(memo, d) {
-            return memo + (d[countVar]);
-          }, 0);
-          return [y, w_s / w];
-        })
-      };
+      if (contVarType != 'total') {
+        return {
+          label: s,
+          color: colors[s],
+          data: _.map(yearGroups, function(items, y) {
+            var w_s = _.reduce(items, function(memo, d) {
+              return memo + (d[countVar] * d[contVar]);
+            }, 0);
+            var w = _.reduce(items, function(memo, d) {
+              return memo + (d[countVar]);
+            }, 0);
+            return [y, w_s / w];
+          })
+        };
+      } else {
+        return {
+          label: s,
+          color: colors[s],
+          data: _.map(yearGroups, function(items, y) {
+            var w = _.reduce(items, function(memo, d) {
+              return memo + (d[contVar]);
+            }, 0);
+            return [y, w];
+          })
+        };
+      }
     } else {
       return {
         label: s,
