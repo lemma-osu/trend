@@ -11,7 +11,7 @@
   <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.4/semantic.min.js"></script>
-  <script src="//cdnjs.cloudflare.com/ajax/libs/lodash.js/3.10.1/lodash.min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/lodash.js/4.13.1/lodash.min.js"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
   <script src="js/util.js"></script>
   <script src="js/ui.js"></script>
@@ -49,10 +49,6 @@
                     <span>Variable: </span>
                     <span id="variable-link" class="modal-link"></span>
                   </div>
-                  <div class="list-info">
-                    <span>Matching Records: </span>
-                    <span id="matching-count"></span>
-                  </div>
                   <div class="export-csv">
                     <span id="export-link" class='modal-link'>Export to CSV</span>
                   </div>
@@ -60,6 +56,16 @@
               </div>
             </div>
           </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="sixteen wide column">
+          <div id="no-records" class="ui error message"></div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="sixteen wide column">
+          <div id="warning" class="ui error message"></div>
         </div>
       </div>
       <div class="row">

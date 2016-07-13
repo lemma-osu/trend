@@ -14,6 +14,9 @@ $(document).ready(function() {
   // Hide the main container until the data has been read in
   $('#main-container').hide();
 
+  // Hide the warnings parent container
+  $('#warning').parents('.row').hide();
+
   var jsonFn = getJSONFilename(document.URL);
   $.getJSON(jsonFn, function(data) {
     // Read the JSON data into a new configuration object

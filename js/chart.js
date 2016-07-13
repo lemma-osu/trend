@@ -633,7 +633,7 @@ models.compositeContainer = function() {
         var extent = d3.extent(d3.merge(series), function(d) { return d[1]; });
         var m = (extent[1] - extent[0]) / 90.0;
         var dMin, dMax, PRECISION=0.00001;
-        if (Math.abs(m - 0) > PRECISION) {
+        if (Math.abs(m) > PRECISION) {
           dMin = extent[1] - m * 95.0;
           dMax = m * 100.0 + extent[0];
         } else {

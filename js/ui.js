@@ -4,11 +4,11 @@
 /**
  * Create Semantic UI dropdown menu 
  * @param {string} id - The ID to set on the dropdown element
- * @param {array} items - The dropdown items.  This should be an array of
+ * @param {Array} items - The dropdown items.  This should be an array of
  *   objects, each with both key and alias keys
  * @param {bool} multiple - Flag for creating a multiple select dropdown list
  * @param {string} defaultText - The default text to show in the dropdown
- * @returns {div} - The enclosing HTML div tag for the dropdown
+ * @returns {HTMLDivElement} - The enclosing HTML div tag for the dropdown
  */
 var createDropdown = function(id, items, multiple, defaultText) {
   'use strict';
@@ -28,7 +28,7 @@ var createDropdown = function(id, items, multiple, defaultText) {
   var menu = $('<div>').attr({
     'class': 'menu'
   });
-  _.each(items, function(item, i) {
+  _.each(items, function(item) {
     var choice;
     switch(item.type) {
       case 'group':
@@ -102,10 +102,10 @@ var createModalDropdownMenu = function(obj) {
         'class="select-none square outline icon"></i>');
 
     // Create click handlers for these buttons
-    $(icons).find('.select-all').on('click', function(e) {
+    $(icons).find('.select-all').on('click', function () {
       selectAllElements(m, dropdownId);
     });
-    $(icons).find('.select-none').on('click', function(e) {
+    $(icons).find('.select-none').on('click', function() {
       selectNoElements(m);
     });
 
@@ -131,8 +131,8 @@ var createModalDropdownMenu = function(obj) {
 /**
  * Create jQueryUI range slider based on the given values 
  * @param {string} sliderId - The ID of the slider div
- * @param {array} range - The minimum and maximum values for the slider
- * @returns {div} - The enclosing HTML div tag for the slider
+ * @param {Array} range - The minimum and maximum values for the slider
+ * @returns {HTMLDivElement} - The enclosing HTML div tag for the slider
  */
 var createRangeSlider = function(sliderId, range) {
   'use strict';
@@ -215,7 +215,7 @@ var createDialog = function(label, inputId) {
     'class': 'ui label'
   }).text(label);
   var input = $('<input>').attr({
-    'type': 'text',
+    'type': 'text'
   });
   var dialog = $('<div>').attr({
     'id': inputId, 
@@ -310,18 +310,21 @@ var initInformation = function(config) {
 
   // Series and variable names for the information box
   var s = config.selected;
-  $('#series-link').html(s.series.alias);
-  $('#variable-link').html(s.variable.alias);
-  $('#year-link').html(s.years[0] + ' - ' + s.years[1]);
+  var seriesLink = $('#series-link');
+  var variableLink = $('#variable-link');
+  var yearLink = $('#year-link');
+  seriesLink.html(s.series.alias);
+  variableLink.html(s.variable.alias);
+  yearLink.html(s.years[0] + ' - ' + s.years[1]);
 
   // Create click handlers on links within the information panel
-  $('#series-link').on('click', function() {
+  seriesLink.on('click', function() {
     $('#series-modal').modal('show');
   });
-  $('#variable-link').on('click', function() {
+  variableLink.on('click', function() {
     $('#variable-modal').modal('show');
   });
-  $('#year-link').on('click', function() {
+  yearLink.on('click', function() {
     $('#year-modal').modal('show');
   });
   $('#export-link').on('click', function() {
@@ -331,7 +334,7 @@ var initInformation = function(config) {
 
 /**
  * Set a dropdown menu to select all elements
- * @param {div} m - The div object of the modal manu
+ * @param {HTMLDivElement} m - The div object of the modal menu
  * @param {string} id - The id of the stratum from which to pull all values
  */
 var selectAllElements = function(m, id) {
@@ -343,7 +346,7 @@ var selectAllElements = function(m, id) {
 
 /**
  * Set a dropdown menu to select no elements
- * @param {div} m - The div object of the modal manu
+ * @param {HTMLDivElement} m - The div object of the modal menu
  */
 var selectNoElements = function(m) {
   'use strict';
@@ -355,7 +358,7 @@ var selectNoElements = function(m) {
  * Function to fire when a focus dropdown list is changed - this gets the 
  * currently selected values, updates the config object, updates the 
  * information panel, and redraws the chart
- * @param {div} dd - The dropdown object (div) 
+ * @param {HTMLDivElement} dd - The dropdown object (div)
  */
 var focusDropdownChange = function(dd) {
   'use strict';
@@ -399,7 +402,7 @@ var focusDropdownChange = function(dd) {
   var dataID = '#' + (modalID.split('-'))[0] + '-data';
   $(dataID + ' li').remove();
   if (!all) {
-    _.each(config.selected.focus[id], function(item, i) { 
+    _.each(config.selected.focus[id], function(item) {
       var el = $('<li>').text(item);
       el.appendTo($(dataID));
     });
@@ -407,41 +410,33 @@ var focusDropdownChange = function(dd) {
     var el = $('<li>').text('All');
     el.appendTo($(dataID));
   }
-
-  // Refilter and update the chart 
-  filteredData = filterData(config);
-  updateRecordCount(filteredData.count);
-  updateChart(filteredData.data);
+  updateView();
 };
 
 /**
  * Function to fire when the series dropdown list is changed - this updates
  * the config object, updates the information panel, and redraws the chart
- * @param {div} dd - The dropdown object (div) 
+ * @param {HTMLDivElement} dd - The dropdown object (div)
  */
 var seriesDropdownChange = function(dd) {
   'use strict';
   var value = dd.dropdown('get value');
   config.selected.series = config.catFields[value]; 
   $('#series-link').text(config.selected.series.alias);
-  filteredData = filterData(config);
-  updateRecordCount(filteredData.count);
-  updateChart(filteredData.data);
+  updateView();
 };
 
 /**
  * Function to fire when the variable dropdown list is changed - this updates
  * the config object, updates the information panel, and redraws the chart
- * @param {div} dd - The dropdown object (div) 
+ * @param {HTMLDivElement} dd - The dropdown object (div)
  */
 var variableDropdownChange = function(dd) {
   'use strict';
   var value = dd.dropdown('get value');
   config.selected.variable = config.contFields[value];
   $('#variable-link').text(config.selected.variable.alias);
-  filteredData = filterData(config);
-  updateRecordCount(filteredData.count);
-  updateChart(filteredData.data);
+  updateView();
 };
 
 /** 
@@ -459,19 +454,38 @@ var yearSliderChange = function(event, ui) {
 /** 
  * Function to fire when the year slider is stopped - this updates the
  * the config object, updates the information panel, and redraws the chart
- * @param {event} event - The event that was fired
- * @param {element} ui - The ui element that was operated on
  */
-var yearSliderStop = function(event, ui) {
+var yearSliderStop = function() {
   'use strict';
   var years = $('#year-slider').slider('values');
   var yearRangeStr = years[0] + " - " + years[1];
   config.selected.years[0] = +years[0];
   config.selected.years[1] = +years[1];
   $('#year-link').text(yearRangeStr);
+  updateView();
+};
+
+/**
+ * Function to fire on update of any UI element.  Updates the filtered data,
+ * warnings, and charts
+ */
+var updateView = function() {
+  var chartDiv = $('#chart');
+  var warningDiv = $('#warning').parents('.row');
   filteredData = filterData(config);
   updateRecordCount(filteredData.count);
-  updateChart(filteredData.data);
+  if (filteredData.count) {
+    filteredData.data = updateWarning(filteredData.data);
+    if (filteredData.data.length) {
+      chartDiv.show();
+      updateChart(filteredData.data);
+    } else {
+      chartDiv.hide();
+    }
+  } else {
+    warningDiv.hide();
+    chartDiv.hide();
+  }
 };
 
 var downloadFile = function(csvFile) {
@@ -493,10 +507,79 @@ var downloadFile = function(csvFile) {
  */
 var updateRecordCount = function(count) {
   'use strict';
-  $('#matching-count').text(count);
+  var parameters = $('#parameters');
+  var noRecords = $('#no-records');
   if (count === 0) {
-    $('#parameters').attr({'class': 'ui negative message'});
+    parameters.attr({'class': 'ui negative message'});
+    var header = $('<div>').addClass('header').text('Error');
+    var text = 'There are no series with this combination of strata';
+    var p = $('<p>').text(text);
+    noRecords.empty().append(header).append(p).parents('.row').show();
   } else {
-    $('#parameters').attr({'class': 'ui info message'});
+    parameters.attr({'class': 'ui info message'});
+    noRecords.parents('.row').hide();
   }
+};
+
+/**
+ *  Update the warning box if any series is less than an acceptable threshold
+ *  @param {object} data - The data to use to determine threshold
+ */
+var updateWarning = function(data) {
+  'use strict';
+  var WARNING_THRESHOLD = config.warningAreaThreshold;
+  var MINIMUM_THRESHOLD = config.minimumAreaThreshold;
+  var units = config.selected.area.units;
+  var hide = false;
+  var warn = false;
+  var hideSeries = [];
+  var lowSeries = [];
+  var removeList = [];
+  _.each(data, function(v, k) {
+    if (v.minCount < MINIMUM_THRESHOLD) {
+      hide = true;
+      hideSeries.push({label: v.label, minCount: v.minCount});
+      removeList.push(k);
+    }
+    else if (v.minCount < WARNING_THRESHOLD) {
+      warn = true;
+      lowSeries.push({label: v.label, minCount: v.minCount});
+    }
+  });
+
+  var warningDiv = $('#warning');
+  if (hide || warn) {
+    var header = $('<div>').addClass('header').text('Warning(s)');
+    warningDiv.empty().append(header);
+    var text, p, list;
+    if (hide) {
+      text = 'These series are not shown because they are less than ' +
+        'the minimum area threshold (' + MINIMUM_THRESHOLD + ' ' + units + ')';
+      p = $('<p>').text(text);
+      list = $('<ul>').addClass('list');
+      _.each(hideSeries, function (v) {
+        var msg = 'Series ' + v.label + ': ' + v.minCount.toFixed(2) + ' ' + units;
+        $('<li>').text(msg).appendTo(list);
+      });
+      warningDiv.append(p).append(list);
+    }
+    if (warn) {
+      text = 'These series have low areas associated with their strata. ' +
+        'Use with caution!';
+      p = $('<p>').text(text);
+      list = $('<ul>').addClass('list');
+      _.each(lowSeries, function (v) {
+        var msg = 'Series ' + v.label + ': ' + v.minCount.toFixed(2) + ' ' + units;
+        $('<li>').text(msg).appendTo(list);
+      });
+      warningDiv.append(p).append(list)
+    }
+    warningDiv.parents('.row').show();
+  } else {
+    warningDiv.parents('.row').hide();
+  }
+
+  // Return the (possibly modified) series data
+  _.pullAt(data, removeList);
+  return data;
 };

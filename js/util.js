@@ -1,5 +1,7 @@
+'use strict';
+
 // JSHint options
-/*globals _, d3, config, rawData,*/
+/*globals _, d3, config, rawData*/
 
 /**
  * Main configuration object - this stores all the metadata information
@@ -7,7 +9,6 @@
  * @param {object} data - The JSON specification of the trajectory data
  */
 var Configuration = function(data) {
-  'use strict';
   // Read in the JSON specification of the fields and separate them into 
   // separate classes
   this.initialize = function(data) {
@@ -16,15 +17,15 @@ var Configuration = function(data) {
       var f = _.filter(data.variables, function(d) {
         return d.type == type;
       });
-      return _.object(_.map(f, function(d) {
+      return _.fromPairs(_.map(f, function(d) {
         // If this is a categorical variable, store the categories as key/value
         // pairs instead of an array.  We also assign a unique color to this
         // category so that it can be used consistently across graphs
         if (type == 'categorical') {
-          d.categories = _.object(_.map(d.categories, function(x, i) {
+          d.categories = _.fromPairs(_.map(d.categories, function(x, i) {
             return [x.key, {'alias': x.alias, 'color': colors[i % 20]}];
-          })); 
-          d.groups = _.object(_.map(d.groups, function(x, i) {
+          }));
+          d.groups = _.fromPairs(_.map(d.groups, function(x, i) {
             return [x.key, {
               'alias': x.alias, 'color': colors[i % 20], 'items': x.items
             }];
@@ -33,6 +34,10 @@ var Configuration = function(data) {
         return [d.key, d];
       }));
     };
+
+    // Set the area thresholds for raising warnings or hiding on small strata
+    this.warningAreaThreshold = parseFloat(data.warningAreaThreshold);
+    this.minimumAreaThreshold = parseFloat(data.minimumAreaThreshold);
 
     // Separate the different types of fields
     this.selected = {};
@@ -85,7 +90,7 @@ var Configuration = function(data) {
   };
 
   this.initializeStrata = function(data) {
-    this.strata = _.object(_.map(this.catFields, function(f) {
+    this.strata = _.fromPairs(_.map(this.catFields, function(f) {
       return [ f.key,
         _.chain(rawData)
           .map(function(d) { return d[f.key]; })
@@ -116,7 +121,7 @@ var calculateGroupData = function(data, key, g, items) {
   // Filter to just the items in this group.  At the same time, remove the
   // key from each record to make grouping easier 
   var filteredData = _.chain(data)
-    .filter(function(d) { return _.contains(items, d[key]); })
+    .filter(function(d) { return _.includes(items, d[key]); })
     .map(function(d) { return _.omit(d, key); })
     .value();
 
@@ -196,7 +201,7 @@ var filterData = function(config) {
       cats = [];
       _.each(v, function(d) {
         var groups = config.catFields[k].groups;
-        if (_.contains(_.keys(groups), d)) {
+        if (_.includes(_.keys(groups), d)) {
           cats = cats.concat(groups[d].items);
         } else {
           cats.push(d);
@@ -207,7 +212,7 @@ var filterData = function(config) {
     conds[k] = cats;
   });
   var data = _.filter(rawData, function(d) { 
-    return _.every(conds, function(v, k) { return _.contains(v, d[k]); });
+    return _.every(conds, function(v, k) { return _.includes(v, d[k]); });
   });
 
   var recordCount = data.length;
@@ -235,8 +240,8 @@ var filterData = function(config) {
   // Get the color choices
   var groups = config.catFields[seriesVar].groups;
   var items = config.catFields[seriesVar].categories;
-  var colors = _.object(_.map(series, function(d) {
-    if (_.contains(_.keys(groups), d)) {
+  var colors = _.fromPairs(_.map(series, function(d) {
+    if (_.includes(_.keys(groups), d)) {
       return [d, groups[d].color];
     } else {
       return [d, items[d].color];
@@ -249,7 +254,7 @@ var filterData = function(config) {
   // counting).  The record also has to meet the year threshold to be
   // assigned.  For series that represent groups, assign the record if the
   // series matches.
-  var seriesData = _.object(series, _.map(series, function(s) { return []; }));
+  var seriesData = _.zipObject(series, _.map(series, function(s) { return []; }));
   var groupKeys = _.keys(groups); 
   _.each(data, function(d) {
     if (d[yearVar] >= minYear && d[yearVar] <= maxYear) {
@@ -274,11 +279,23 @@ var filterData = function(config) {
     var yearGroups = _.groupBy(subset, function(d) {
       return d[yearVar];
     });
+
+    // Calculate the minimum count across years associated with this series.
+    // We need this information to warn on low counts
+    var counts = _.map(yearGroups, function(items, y) {
+      var w = _.reduce(items, function(memo, d) {
+        return memo + (d[countVar]);
+      }, 0);
+      return w;
+    });
+    var minCount = _.min(counts);
+
     if (contVar != countVar) {
       if (contVarType != 'total') {
         return {
           label: s,
           color: colors[s],
+          minCount: minCount, 
           data: _.map(yearGroups, function(items, y) {
             var w_s = _.reduce(items, function(memo, d) {
               return memo + (d[countVar] * d[contVar]);
@@ -293,6 +310,7 @@ var filterData = function(config) {
         return {
           label: s,
           color: colors[s],
+          minCount: minCount, 
           data: _.map(yearGroups, function(items, y) {
             var w = _.reduce(items, function(memo, d) {
               return memo + (d[contVar]);
@@ -305,6 +323,7 @@ var filterData = function(config) {
       return {
         label: s,
         color: colors[s],
+        minCount: minCount, 
         data: _.map(yearGroups, function(items, y) {
           var w = _.reduce(items, function(memo, d) {
             return memo + (d[countVar]);
