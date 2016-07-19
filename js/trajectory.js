@@ -177,9 +177,14 @@ $(document).ready(function() {
       // Update the count of matching records
       updateRecordCount(filteredData.count);
 
+      // Update the warning if necessary
+      updateWarning(filteredData.data);
+
       // Finished loading - reveal the form
       $('#main-container').fadeIn(500, function() {
-        $('.dimmer').fadeOut();
+
+        // Show the documentation
+        initDocumentation();
 
         // Get width of the chart element and set height to static for now
         var width = $('#chart').width(),

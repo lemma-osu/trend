@@ -1,8 +1,6 @@
-@import url(https://fonts.googleapis.com/css?family=Lato:400,700);
-
 * {
-   margin: 0px;
-   padding: 0px;
+   margin: 0;
+   padding: 0;
 }
 
 html {
@@ -56,4 +54,44 @@ body.dimmed {
 
 #left-info {
    border-right: 1px solid rgba(34, 36, 38, 0.15);
+}
+
+
+/* Documentation */
+#documentation {
+    font-weight: 400;
+}
+
+#documentation.ui.modal {
+    position: fixed;
+    top: 50%;
+}
+
+#documentation .doc-image {
+    display: block;
+    border: 1px solid #aaa;
+    padding: 0.5em;
+    margin: 1em auto;
+}
+
+#documentation .list-item-heading {
+    font-weight: bold;
+}
+
+#documentation .small-panel {
+    height: 250px;
+    overflow-y: scroll;
+}
+
+#documentation .large-panel {
+    height: 600px;
+    overflow-y: scroll;
+}
+
+#documentation .content li {
+    margin-bottom: 10px;
+}
+
+#documentation .content li:last-child {
+    margin-bottom: 0;
 }
