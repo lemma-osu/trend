@@ -423,7 +423,10 @@ models.lineContainer = function() {
       lines.attr('class', function(d,i) { return 'line line-' + i; })
         .classed('hover', function(d) { return d.hover; })
         .style('fill', function(d,i) { return d.color || color[i % 20]; })
-        .style('stroke', function(d,i) { return d.color || color[i % 20]; });
+        .style('stroke', function(d,i) { return d.color || color[i % 20]; })
+        .style('stroke-dasharray', function(d) {
+          return d.minCount < config.warningAreaThreshold ? '3, 5' : 'none';
+        });
       lines.transition()
         .style('stroke-opacity', 1)
         .style('fill-opacity', 0.5);

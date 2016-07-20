@@ -575,7 +575,8 @@ var updateWarnings = function(data) {
     warningText = 'Warning: Series have low area';
     header = $('<div>').addClass('header').text(warningText);
     lowAreaDiv.empty().append(header);
-    text = 'These series have low areas associated with their strata. ' +
+    text = 'These series have low areas associated with their strata ' +
+      'and are symbolized with dashed lines in the chart below. ' +
       'Use with caution!';
     p = $('<p>').text(text);
     list = $('<ul>').addClass('list');

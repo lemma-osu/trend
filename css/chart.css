@@ -85,6 +85,7 @@
 }
 
 .lines .point {
+  stroke-dasharray: none;
   transition: stroke-width 250ms linear;
   -moz-transition: stroke-width 250ms linear;
   -webkit-transition: stroke-width 250ms linear;
