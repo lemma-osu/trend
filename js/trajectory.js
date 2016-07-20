@@ -178,7 +178,7 @@ $(document).ready(function() {
       updateRecordCount(filteredData.count);
 
       // Update the warning if necessary
-      updateWarning(filteredData.data);
+      updateWarnings(filteredData.data);
 
       // Finished loading - reveal the form
       $('#main-container').fadeIn(500, function() {

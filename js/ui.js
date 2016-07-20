@@ -471,11 +471,12 @@ var yearSliderStop = function() {
  */
 var updateView = function() {
   var chartDiv = $('#chart');
-  var warningDiv = $('#warning').parents('.row');
+  var notShownDiv = $('#not-shown-warning').parents('.row');
+  var lowAreaDiv = $('#low-area-warning').parents('.row');
   filteredData = filterData(config);
   updateRecordCount(filteredData.count);
   if (filteredData.count) {
-    filteredData.data = updateWarning(filteredData.data);
+    filteredData.data = updateWarnings(filteredData.data);
     if (filteredData.data.length) {
       chartDiv.show();
       updateChart(filteredData.data);
@@ -483,7 +484,8 @@ var updateView = function() {
       chartDiv.hide();
     }
   } else {
-    warningDiv.hide();
+    notShownDiv.hide();
+    lowAreaDiv.hide();
     chartDiv.hide();
   }
 };
@@ -522,10 +524,10 @@ var updateRecordCount = function(count) {
 };
 
 /**
- *  Update the warning box if any series is less than an acceptable threshold
+ *  Update the warning boxes if any series is less than an acceptable threshold
  *  @param {object} data - The data to use to determine threshold
  */
-var updateWarning = function(data) {
+var updateWarnings = function(data) {
   'use strict';
   var WARNING_THRESHOLD = config.warningAreaThreshold;
   var MINIMUM_THRESHOLD = config.minimumAreaThreshold;
@@ -547,36 +549,44 @@ var updateWarning = function(data) {
     }
   });
 
-  var warningDiv = $('#warning');
-  if (hide || warn) {
-    var header = $('<div>').addClass('header').text('Warning(s)');
-    warningDiv.empty().append(header);
-    var text, p, list;
-    if (hide) {
-      text = 'These series are not shown because they are less than ' +
+  var warningText, header, text, p, list;
+
+  var notShownDiv = $('#not-shown-warning');
+  if (hide) {
+    warningText = 'Warning: Series not shown';
+    header = $('<div>').addClass('header').text(warningText);
+    notShownDiv.empty().append(header);
+    text = 'These series are not shown because they are less than ' +
         'the minimum area threshold (' + MINIMUM_THRESHOLD + ' ' + units + ')';
-      p = $('<p>').text(text);
-      list = $('<ul>').addClass('list');
-      _.each(hideSeries, function (v) {
-        var msg = 'Series ' + v.label + ': ' + v.minCount.toFixed(2) + ' ' + units;
-        $('<li>').text(msg).appendTo(list);
-      });
-      warningDiv.append(p).append(list);
-    }
-    if (warn) {
-      text = 'These series have low areas associated with their strata. ' +
-        'Use with caution!';
-      p = $('<p>').text(text);
-      list = $('<ul>').addClass('list');
-      _.each(lowSeries, function (v) {
-        var msg = 'Series ' + v.label + ': ' + v.minCount.toFixed(2) + ' ' + units;
-        $('<li>').text(msg).appendTo(list);
-      });
-      warningDiv.append(p).append(list)
-    }
-    warningDiv.parents('.row').show();
+    p = $('<p>').text(text);
+    list = $('<ul>').addClass('list');
+    _.each(hideSeries, function (v) {
+      var msg = 'Series ' + v.label + ': ' + v.minCount.toFixed(2) + ' ' + units;
+      $('<li>').text(msg).appendTo(list);
+    });
+    notShownDiv.append(p).append(list);
+    notShownDiv.parents('.row').show();
   } else {
-    warningDiv.parents('.row').hide();
+    notShownDiv.parents('.row').hide();
+  }
+
+  var lowAreaDiv = $('#low-area-warning');
+  if (warn) {
+    warningText = 'Warning: Series have low area';
+    header = $('<div>').addClass('header').text(warningText);
+    lowAreaDiv.empty().append(header);
+    text = 'These series have low areas associated with their strata. ' +
+      'Use with caution!';
+    p = $('<p>').text(text);
+    list = $('<ul>').addClass('list');
+    _.each(lowSeries, function (v) {
+      var msg = 'Series ' + v.label + ': ' + v.minCount.toFixed(2) + ' ' + units;
+      $('<li>').text(msg).appendTo(list);
+    });
+    lowAreaDiv.append(p).append(list)
+    lowAreaDiv.parents('.row').show();
+  } else {
+    lowAreaDiv.parents('.row').hide();
   }
 
   // Return the (possibly modified) series data

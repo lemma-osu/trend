@@ -121,7 +121,7 @@ models.legendContainer = function() {
   // Constructor for this chanrt
   function chart(selection) {
     selection.each(function(data) {
-      // Legend curently is setup to automaticaly expand vertically based
+      // Legend currently is setup to automatically expand vertically based
       // on a max width. Should implement legend where EITHER a maxWidth or
       // a maxHeight is defined, then the other dimension will automatically
       // expand to fit, and anything that exceeds that will automatically
