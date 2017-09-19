@@ -352,11 +352,19 @@ models.lineContainer = function() {
           return 'translate(' + d[0] + ',' + d[1] + ')';
         });
 
-      var voronoi = d3.geom.voronoi(vertices).map(function(d, i) {
+      // Create jittered versions of the vertices to ensure that no two
+      // points are coincident which causes problems for d3.geom.voronoi
+      var fuzzedVertices = vertices.map(function(d, i) {
+          var xFuzz = d[0] + ((Math.random() - 0.5) * 1e-5);
+          var yFuzz = d[1] + ((Math.random() - 0.5) * 1e-5);
+          return [xFuzz, yFuzz, d[2], d[3]];
+      });
+
+      var voronoi = d3.geom.voronoi(fuzzedVertices).map(function(d, i) {
         return {
           'data': d,
-          'series': vertices[i][2],
-          'point': vertices[i][3]
+          'series': fuzzedVertices[i][2],
+          'point': fuzzedVertices[i][3]
         };
       });
 

@@ -143,13 +143,13 @@ var calculateGroupData = function(data, key, g, items) {
     // currently being considered to the group value (g)
     obj[key] = g;
 
-    // Mark this as a grouped record
-    obj.grouped = true;
-
     var group = groupKey.split(','); 
     _.each(_.zip(groupKeys, group), function(item, j) {
       obj[item[0]] = item[1]; 
     });
+
+    // Mark this as a grouped record
+    obj.grouped = true;
 
     // Calculate the total area once
     var totalArea = _.reduce(groupData, function(memo, d) {
@@ -341,7 +341,8 @@ var filterData = function(config) {
  * parameter in the query string is currently 'json-filename'.
  * @param {string} url - The current URL
  * @return (string) - If the json-filename key is specified, return the
- *   specified filename.  Otherwise, return the default 'trajectory.json'.
+ *   specified filename.  Otherwise, return the default
+ *   'trajectory-default.json'.
  */
 var getJSONFilename = function(url) {
   'use strict';
@@ -355,7 +356,7 @@ var getJSONFilename = function(url) {
     }
     return hash[1];
   } else {
-    return 'trajectory.json';
+    return 'trajectory-default.json';
   }
 };
 
@@ -392,22 +393,23 @@ var convertToCSV = function(config, seriesData) {
 
   // Header line
   var header = [s.series.alias];
-  var years = _.map(seriesData.data[0].data, function(d) { return d[0]; });
+  var years = _.range(s.years[0], s.years[1] + 1);
   result += header.concat(years).join(',') + '\n';
  
   // Now print out the actual data: series are rows, years are columns and 
   // variable values are array elements
   _.each(seriesData.data, function(s) {
-    // console.log(s.label);
     var line = [ s.label ];
-    var values = _.map(s.data, function(d) { return d[1]; }).join(',');
+    var values = _.map(years, function(y) {
+      var obj = _.find(s.data, function(d) { return d[0] == y.toString(); });
+      return obj ? obj[1] : '';
+    }).join(',');
     result += line.concat(values).join(',') + '\n';
   });
 
   var encoded = 'data:application/csv;charset=utf-8,' +
     encodeURIComponent(result);
 
-  console.log(typeof(encoded));
   return encoded;
 };
 
