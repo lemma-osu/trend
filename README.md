@@ -1,6 +1,6 @@
-trajectory
+trend
 ==========
-trajectory is a web tool using D3 and Semantic UI for visualizing Gradient
+trend is a web tool using D3 and Semantic UI for visualizing Gradient
 Nearest Neighbor (GNN) trends over time.  GNN is a forest vegetation
 mapping method based on ordination (canonical correspondence analysis) and
 nearest-neighbor imputation.
@@ -10,7 +10,7 @@ to 2012 (data avaialable online at http://lemma.forestry.oregonstate.edu/data).
 Using these models and ancillary stratifying variables (such as
 ownership, disturbance patterns, etc.), we create strata that include 
 counts of pixels in a stratum and statistics from GNN continuous variables.
-The trajectory tool allows a user to:
+The trend tool allows a user to:
   
   1. select a continuous variable to graph
   2. select a categorical variable to represent multiple series
@@ -24,7 +24,7 @@ include any categorical/continuous variables.
 
 Inputs
 ------
-trajectory relies on a JSON file to describe the data fields and point to a 
+trend relies on a JSON file to describe the data fields and point to a 
 CSV file which holds the actual data.  Right now it is hard-coded to 
 read from a file called 'trajectory.json', which should be a user input in
 later iterations.  For now, we have not posted the data files as they are 

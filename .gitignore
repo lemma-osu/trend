@@ -1,5 +1,4 @@
-components
-.idea
+*toc.html
 *.swp
 *.json
 *.csv
