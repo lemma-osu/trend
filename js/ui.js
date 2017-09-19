@@ -491,14 +491,24 @@ var updateView = function() {
 };
 
 var downloadFile = function(csvFile) {
+  // See http://stackoverflow.com/a/24922761
+  // Creation of the blob is handled in convertToCSV
   'use strict';
-  var uri = convertToCSV(config, filteredData);
-  var link = document.createElement('a');
-  link.href = uri;
-  link.download = csvFile;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  var blob = convertToCSV(config, filteredData);
+  if (window.navigator.msSaveBlob) {
+    window.navigator.msSaveBlob(blob, csvFile);
+  } else {
+    var link = document.createElement('a');
+    if (link.download !== undefined) {
+      var url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', csvFile);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  }
 };
 
 /**

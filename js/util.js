@@ -407,9 +407,6 @@ var convertToCSV = function(config, seriesData) {
     result += line.concat(values).join(',') + '\n';
   });
 
-  var encoded = 'data:application/csv;charset=utf-8,' +
-    encodeURIComponent(result);
-
-  return encoded;
+  return new Blob([result], { type: 'text/csv;charset=utf-8;' });
 };
 
