@@ -4,6 +4,7 @@
 <head>
   <meta charset="utf-8">
   <title>GNN Trend Tool</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:400,700">
   <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.4/semantic.min.css">
   <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
   <link rel="stylesheet" href="css/trajectory.css">
@@ -11,19 +12,21 @@
   <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.4/semantic.min.js"></script>
-  <script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/lodash.js/4.13.1/lodash.min.js"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
+  <script src="js/documentation.js"></script>
   <script src="js/util.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/chart.js"></script>
 </head>
 
 <body>
-  <!-- div class="ui active dimmer">
+  <div class="ui active dimmer">
     <div class="ui text loader">Loading</div>
-  </div -->
+  </div>
+  <div id="documentation" class="ui large transition modal"></div>
   <div id="main-container">
-    <h1 class="ui header">GNN Trend Tool</h1>
+    <h1 class="ui header">GNN TrAccEr</h1>
     <div class="ui grid">
       <div class="row">
         <div class="sixteen wide column">
@@ -32,11 +35,11 @@
             <div class="ui divider"></div>
             <div class="ui grid">
               <div class="row">
-                <div id="left-info" class="eleven wide column">
+                <div id="left-info" class="twelve wide column">
                   <div class="list-info">Focus Area</div>
                   <div id="focus-container" class="ui equal width grid"></div>
                 </div>
-                <div class="five wide column">
+                <div class="four wide column">
                   <div class="list-info">
                     <span>Series: </span>
                     <span id="series-link" class="modal-link"></span>
@@ -49,14 +52,28 @@
                     <span>Variable: </span>
                     <span id="variable-link" class="modal-link"></span>
                   </div>
-                  <div class="list-info">
-                    <span>Matching Records: </span>
-                    <span id="matching-count"></span>
+                  <div class="export-csv">
+                    <span id="export-link" class='modal-link'>Export to CSV</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="sixteen wide column">
+          <div id="no-records" class="ui error message"></div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="sixteen wide column">
+          <div id="not-shown-warning" class="ui error message"></div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="sixteen wide column">
+          <div id="low-area-warning" class="ui error message"></div>
         </div>
       </div>
       <div class="row">

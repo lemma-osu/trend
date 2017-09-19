@@ -9,7 +9,7 @@
   -moz-transition: opacity 500ms linear;
   -webkit-transition: opacity 500ms linear;
 
-  transition-delay: 250ms
+  transition-delay: 250ms;
   -moz-transition-delay: 250ms;
   -webkit-transition-delay: 250ms;
 
@@ -68,14 +68,14 @@
 
 .lines path {
   fill: none;
-  stroke-width: 1.5px;
+  stroke-width: 2px;
   stroke-linecap: round;
 
   transition: stroke-width 250ms linear;
   -moz-transition: stroke-width 250ms linear;
   -webkit-transition: stroke-width 250ms linear;
 
-  transition-delay: 250ms
+  transition-delay: 250ms;
   -moz-transition-delay: 250ms;
   -webkit-transition-delay: 250ms;
 }
@@ -85,6 +85,7 @@
 }
 
 .lines .point {
+  stroke-dasharray: none;
   transition: stroke-width 250ms linear;
   -moz-transition: stroke-width 250ms linear;
   -webkit-transition: stroke-width 250ms linear;
@@ -93,4 +94,16 @@
 .lines .point.hover {
   stroke-width: 20px;
   stroke-opacity: .5;
+}
+
+rect.pane {
+  fill: none;
+  pointer-events: all;
+}
+
+#chart-border {
+  fill: none;
+  stroke: #000;
+  stroke-opacity: .75;
+  shape-rendering: crispEdges;
 }

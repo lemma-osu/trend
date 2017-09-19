@@ -1,12 +1,21 @@
+// JSHint options
+// TODO: There is probably a better way of building this that doesn't rely
+// on specifying external functions as globals
+/*globals _, $, d3, Configuration, calculateGroupData, createModalDialogMenu, createModalDropdownMenu, createModalSliderMenu, downloadFile, filterData, focusDropdownChange, getJSONFilename, initInformation, models, resizeChart, seriesDropdownChange, updateRecordCount, variableDropdownChange, yearSliderChange, yearSliderStop*/ 
+
 var config;
 var rawData,
     filteredData,
     compositeContainer;
 
 $(document).ready(function() {
+  'use strict';
 
   // Hide the main container until the data has been read in
   $('#main-container').hide();
+
+  // Hide the warnings parent container
+  $('#warning').parents('.row').hide();
 
   var jsonFn = getJSONFilename(document.URL);
   $.getJSON(jsonFn, function(data) {
@@ -21,7 +30,7 @@ $(document).ready(function() {
       // Ensure that all fields are accounted for from the JSON file
       var csvFields = _.keys(rawData[0]);
       if (!_.isEqual(config.getFields().sort(), csvFields.sort())) {
-        msg = 'Fields from JSON and CSV differ.  Check both files'
+        var msg = 'Fields from JSON and CSV differ.  Check both files';
         throw Error(msg);
       }
 
@@ -30,9 +39,21 @@ $(document).ready(function() {
         .union(_.keys(config.contFields), [config.selected.year.key])
         .uniq()
         .value();
-      _.forEach(rawData, function(r) {
-        _.forEach(numberFields, function(f) {
+      _.each(rawData, function(r) {
+        _.each(numberFields, function(f) {
           r[f] = +r[f];
+        });
+      });
+
+      // Mark all the current records as 'non-grouped'
+      _.each(rawData, function(d) { d.grouped = false; });
+
+      // Calculate group data records
+      var copyData = _.clone(rawData);
+      _.each(config.catFields, function(v, k) {
+        _.each(v.groups, function(obj, group) {
+          var newData = calculateGroupData(copyData, k, group, obj.items);
+          rawData = rawData.concat(newData);
         });
       });
 
@@ -54,42 +75,72 @@ $(document).ready(function() {
 
       // Create modal menus for all strata
       _.each(_.keys(config.strata), function(k, i) {
-        // TODO: Change this to alias of each category
-        var items = _.map(config.strata[k], function(d) {
-          return { key: d, alias: d }
+        // Container for all dropdown items
+        var dropdownItems = [];
+
+        // First, collect all the group items.  If any are present, push
+        // these to the menu and provide headings and a divider
+        var groupKeys = _.filter(config.strata[k], function(d) {
+          return _.has(config.catFields[k].groups, d);
         });
+        if (groupKeys.length) {
+          dropdownItems.push({ type: 'header', key: 'Groups' });
+          var groupItems = _.map(groupKeys, function(d) {
+            var alias = config.catFields[k].groups[d].alias;
+            return { type: 'group', key: d, alias: d + ': ' + alias };
+          });
+          dropdownItems = dropdownItems.concat(groupItems);
+          dropdownItems.push({ type: 'divider' });
+        }
+        dropdownItems.push({ type: 'header', key: 'Items' });
+        var itemKeys = _.filter(config.strata[k], function(d) {
+          return _.has(config.catFields[k].categories, d);
+        });
+        var items = _.map(itemKeys, function(d) {
+          var alias = config.catFields[k].categories[d].alias;
+          return { type: 'item', key: d, alias: d + ': ' + alias };
+        });
+        dropdownItems = dropdownItems.concat(items);
         createModalDropdownMenu({
           modalId: 'focus' + i + '-modal',
           header: config.catFields[k].alias,
           actions: actions,
           f: focusDropdownChange,
           dropdownId: k,
-          dropdownItems: items,
+          dropdownItems: dropdownItems,
           multiple: true,
           defaultText: 'All'
         });
       });
 
       // Create a modal menu with dropdown for series
+      var dropdownItems = _.map(_.keys(config.catFields), function(k, i) {
+        var alias = config.catFields[k].alias;
+        return { type: 'item', key: k, alias: alias };
+      });
       createModalDropdownMenu({
         modalId: 'series-modal',
         header: 'Series',
         actions: actions,
         f: seriesDropdownChange,
         dropdownId: 'series-dropdown',
-        dropdownItems: config.catFields,
+        dropdownItems: dropdownItems,
         multiple: false,
         defaultText: 'None'
       });
      
       // Create a modal menu with dropdown for variable 
+      dropdownItems = _.map(_.keys(config.contFields), function(k, i) {
+        var alias = config.contFields[k].alias;
+        return { type: 'item', key: k, alias: alias };
+      });
       createModalDropdownMenu({
         modalId: 'variable-modal',
         header: 'Variable',
         actions: actions,
         f: variableDropdownChange,
         dropdownId: 'variable-dropdown',
-        dropdownItems: config.contFields,
+        dropdownItems: dropdownItems,
         multiple: false,
         defaultText: 'None'
       });
@@ -104,7 +155,17 @@ $(document).ready(function() {
         limits: config.selected.years,
         sliderId: 'year-slider'
       });
-  
+
+      // Create a modal menu for exporting a CSV file 
+      createModalDialogMenu({
+        modalId: 'export-modal',
+        inputId: 'export-id',
+        header: 'Export to CSV',
+        label: 'Enter output filename',
+        actions: actions,
+        f: downloadFile,
+      });
+
       // In the modal menus, set the selected values from config
       var s = config.selected;
       $('#series-dropdown').dropdown('set selected', s.series.key);
@@ -116,9 +177,14 @@ $(document).ready(function() {
       // Update the count of matching records
       updateRecordCount(filteredData.count);
 
+      // Update the warning if necessary
+      updateWarnings(filteredData.data);
+
       // Finished loading - reveal the form
       $('#main-container').fadeIn(500, function() {
-        // $('.dimmer').fadeOut();
+
+        // Show the documentation
+        initDocumentation();
 
         // Get width of the chart element and set height to static for now
         var width = $('#chart').width(),
@@ -131,8 +197,13 @@ $(document).ready(function() {
             .width(width)
             .height(height);
 
+        // Create a resize handler
+        d3.select(window).on('resize', function() {
+          resizeChart(filteredData.data); 
+        });
+
         // Render the chart
-        var svg = d3.select('#chart svg')
+        d3.select('#chart svg')
           .datum(filteredData.data)
           .attr('width', width)
           .attr('height', height)
