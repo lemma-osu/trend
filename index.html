@@ -4,20 +4,18 @@
 <head>
   <meta charset="utf-8">
   <title>GNN Trend Tool</title>
+
   <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:400,700">
   <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.4/semantic.min.css">
   <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
   <link rel="stylesheet" href="css/trajectory.css">
   <link rel="stylesheet" href="css/chart.css">
+ 
   <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.4/semantic.min.js"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/lodash.js/4.13.1/lodash.min.js"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
-  <script src="js/documentation.js"></script>
-  <script src="js/util.js"></script>
-  <script src="js/ui.js"></script>
-  <script src="js/chart.js"></script>
 </head>
 
 <body>
@@ -36,8 +34,8 @@
             <div class="ui grid">
               <div class="row">
                 <div id="left-info" class="twelve wide column">
-                  <div class="list-info">Focus Area</div>
-                  <div id="focus-container" class="ui equal width grid"></div>
+                  <div class="list-info">Strata</div>
+                  <div id="strata-container" class="ui equal width grid"></div>
                 </div>
                 <div class="four wide column">
                   <div class="list-info">
@@ -45,8 +43,8 @@
                     <span id="series-link" class="modal-link"></span>
                   </div>
                   <div class="list-info">
-                    <span>Year Range: </span>
-                    <span id="year-link" class="modal-link"></span>
+                    <span>Time Range: </span>
+                    <span id="time-link" class="modal-link"></span>
                   </div>
                   <div class="list-info">
                     <span>Variable: </span>
@@ -85,7 +83,35 @@
       </div>
     </div>
   </div>
-  <script src="js/trajectory.js"></script>
+
+  <script src="js/helpers.js"></script>
+
+  <script src="js/stores/data_store.js"></script>
+
+  <script src="js/models/configuration_model.js"></script>
+  <script src="js/models/data_model.js"></script>
+
+  <script src="js/templates/dropdown_modal_template.js"></script>
+  <script src="js/templates/series_template.js"></script>
+  <script src="js/templates/slider_modal_template.js"></script>
+  <script src="js/templates/stratum_template.js"></script>
+  <script src="js/templates/time_template.js"></script>
+  <script src="js/templates/variable_template.js"></script>
+
+  <script src="js/views/chart_view.js"></script>
+  <script src="js/views/stratum_view.js"></script>
+  <script src="js/views/series_view.js"></script>
+  <script src="js/views/time_view.js"></script>
+  <script src="js/views/variable_view.js"></script>
+  <script src="js/views/stratum_modal_view.js"></script>
+  <script src="js/views/series_modal_view.js"></script>
+  <script src="js/views/time_modal_view.js"></script>
+  <script src="js/views/variable_modal_view.js"></script>
+  <script src="js/views/menu_view.js"></script>
+  <script src="js/views/menu_view.js"></script>
+
+  <script src="js/trend_controller.js"></script>
+  <script src="js/app.js"></script>
 </body>
 
 </html>
