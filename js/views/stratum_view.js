@@ -2,6 +2,11 @@
 (function (window) {
     'use strict';
 
+    /**
+     * View to render a stratum's list in the main menu
+     * @param template
+     * @constructor
+     */
     function StratumView(template) {
         this.template = template;
         this._parent = $('#strata-container');
@@ -9,6 +14,11 @@
         this._list = null;
     }
 
+    /**
+     * Render the list based on currently selected categories for this stratum
+     * @param viewCmd
+     * @param parameter
+     */
     StratumView.prototype.render = function(viewCmd, parameter) {
         var self = this;
         var viewCommands = {

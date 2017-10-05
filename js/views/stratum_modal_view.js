@@ -2,12 +2,22 @@
 (function (window) {
     'use strict';
 
+    /**
+     * View to control stratum modal dialogs
+     * @param template - Template to use to populate modal dialog
+     * @constructor
+     */
     function StratumModalView(template) {
         this.template = template;
         this._modal = null;
         this._dropdown = null;
     }
 
+    /**
+     * Render the dropdown modal view based on the data passed
+     * @param viewCmd
+     * @param parameter
+     */
     StratumModalView.prototype.render = function (viewCmd, parameter) {
         var self = this;
         var viewCommands = {
@@ -42,6 +52,11 @@
         viewCommands[viewCmd]();
     };
 
+    /**
+     * Build dropdown items based on this stratum's categories
+     * @param stratum
+     * @returns {Array}
+     */
     StratumModalView.prototype.buildDropdownItems = function (stratum) {
         var dropdownItems = [];
         var groups = _.filter(stratum.categories, function (g) {
@@ -63,12 +78,18 @@
         }));
     };
 
+    /**
+     * Return all selected dropdown values
+     */
     StratumModalView.prototype.getSelectedDropdownValues = function() {
         // Return an array of sorted values
         var values = this._dropdown.dropdown('get value');
         return _.sortBy(values.split(","), function (x) { return x; });
     };
 
+    /**
+     * Return all dropdown values
+     */
     StratumModalView.prototype.getAllDropdownValues = function() {
         var values = $(this._dropdown).find('.menu .item');
         return values.map(function () {
@@ -76,6 +97,10 @@
         }).get();
     };
 
+    /**
+     * Return whether or not all dropdown items are currently selected
+     * @returns {boolean}
+     */
     StratumModalView.prototype.areAllSelected = function() {
         var selected = this.getSelectedDropdownValues();
         var all = this.getAllDropdownValues();

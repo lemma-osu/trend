@@ -1,10 +1,19 @@
 (function (window) {
     'use strict';
 
+    /**
+     * Class to provide template for TimeView
+     * @constructor
+     */
     function TimeTemplate() {
         this.defaultTemplate = '{{title}}';
     }
 
+    /**
+     * Render time based on data
+     * @param {Object} data
+     * @returns {string}
+     */
     TimeTemplate.prototype.show = function (data) {
         var view = this.defaultTemplate;
         var timeStr = data.minTime + ' - ' + data.maxTime;

@@ -1,13 +1,23 @@
-/* globals _, $ */
+/* globals $ */
 (function (window) {
     'use strict';
 
+    /**
+     * View to render a modal dialog for selecting current time range
+     * @param template - Template to use to populate modal dialog
+     * @constructor
+     */
     function TimeModalView(template) {
         this.template = template;
         this._modal = null;
         this._slider = null;
     }
 
+    /**
+     * Render the modal slider dialog based on the data passed
+     * @param viewCmd
+     * @param parameter
+     */
     TimeModalView.prototype.render = function (viewCmd, parameter) {
         var self = this;
         var viewCommands = {
@@ -45,12 +55,9 @@
         viewCommands[viewCmd]();
     };
 
-    TimeModalView.prototype.buildDropdownItems = function(selected) {
-        return _.map(selected, function(s) {
-            return { type: 'item', key: s.key, alias: s.alias };
-        });
-    };
-
+    /**
+     * Get selected time range from modal dialog
+     */
     TimeModalView.prototype.getTimeRange = function() {
         return this._slider.slider('values');
     };

@@ -1,6 +1,10 @@
 (function (window) {
     'use strict';
 
+    /**
+     * Class to provide template for StratumView
+     * @constructor
+     */
     function StratumTemplate() {
         this.defaultTemplate =
             '<div id="stratum-{{index}}" class="column">' +
@@ -13,6 +17,11 @@
             '</div>';
     }
 
+    /**
+     * Render stratum based on data
+     * @param {Object} data
+     * @returns {string}
+     */
     StratumTemplate.prototype.show = function(data) {
         var view = this.defaultTemplate;
         view = view.replace(/{{index}}/g, data.index);

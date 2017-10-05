@@ -2,6 +2,10 @@
 (function (window) {
     'use strict';
 
+    /**
+     * Class to provide template for Semantic UI dropdown menu
+     * @constructor
+     */
     function DropdownTemplate() {
         this.defaultTemplate = 
             '<div class="sixteen wide column">' + 
@@ -23,6 +27,14 @@
             '<div class="divider"></div>';
     }
 
+    /**
+     * Render dropdown based on input
+     * @param {string} id - ID of dropdown
+     * @param {Array} items - List of items to be placed in dropdown
+     * @param {boolean} multiple - Flag to specify whether multiple selection is allowed
+     * @param {string} defaultText - Text to use for initial setting
+     * @returns {string} - The rendered dropdown HTML
+     */
     DropdownTemplate.prototype.render = function(id, items, multiple, defaultText) {
         var self = this;
         var dropdownHtml = this.defaultTemplate;
@@ -59,6 +71,10 @@
         return dropdownHtml.replace(/{{dropdown}}/g, innerHtml);
     };
 
+    /**
+     * Class to provide template for Semantic UI dropdown modal dialog
+     * @constructor
+     */
     function DropdownModalTemplate() {
         this.defaultTemplate =
             '<div id="{{id}}" class="ui modal grid">' +
@@ -77,6 +93,11 @@
             '</span>';
     }
 
+    /**
+     * Render dropdown modal dialog based on input
+     * @param {Object} data - Parameters for modal dialog menu
+     * @returns {string|*}
+     */
     DropdownModalTemplate.prototype.render = function (data) {
         var view = this.defaultTemplate;
 

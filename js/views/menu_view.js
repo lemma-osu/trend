@@ -2,6 +2,10 @@
 (function (window) {
     'use strict';
 
+    /**
+     * Composite container to hold all menu items
+     * @constructor
+     */
     function MenuView() {
         this.seriesView = new window.app.SeriesView(new window.app.SeriesTemplate());
         this.seriesModalView = new window.app.SeriesModalView(new window.app.DropdownModalTemplate());
@@ -15,11 +19,17 @@
         this.$body = qs('body');
     }
 
+    /**
+     * Render individual menu elements.  This is just a switchyard and individual
+     * rendering is handled by the components
+     * @param {string} viewCmd - Rendering command to run
+     * @param {Object} parameter - Required data for rendering
+     */
     MenuView.prototype.render = function(viewCmd, parameter) {
         var self = this;
         var viewCommands = {
             initializeMenu: function() {
-                _.forEach(parameter.strata, function(s, i) {
+                _.forEach(parameter.strataFields(), function(s, i) {
                     var sv = new window.app.StratumView(new window.app.StratumTemplate());
                     sv.render('show', {stratum: s, index: i});
                     self.stratumViews.push(sv);
@@ -28,14 +38,14 @@
                     mv.render('initialize', {stratum: s, id: i});
                     self.stratumModalViews.push(mv);
                 });
-                self.seriesView.render('show', parameter.selected);
-                self.seriesModalView.render('initialize', parameter.strata);
+                self.seriesView.render('show', parameter.selected());
+                self.seriesModalView.render('initialize', parameter.strataFields());
 
-                self.timeView.render('show', parameter.selected);
-                self.timeModalView.render('initialize', parameter.selected);
+                self.timeView.render('show', parameter.selected());
+                self.timeModalView.render('initialize', parameter.selected());
 
-                self.variableView.render('show', parameter.selected);
-                self.variableModalView.render('initialize', parameter.variables);
+                self.variableView.render('show', parameter.selected());
+                self.variableModalView.render('initialize', parameter.variableFields());
             },
             stratumModalShow: function() {
                 var mv = self.stratumModalViews[parameter.index];
@@ -69,48 +79,54 @@
             },
             variableUpdate: function() {
                 self.variableView.render('update', parameter);
+            },
+            updateBackground: function() {
+                var div = $(self.$menuParameters);
+                if (parameter.count === 0) {
+                    div.attr({'class': 'ui negative message'});
+                } else {
+                    div.attr({'class': 'ui info message'});
+                }
             }
         };
         viewCommands[viewCmd]();
     };
 
+    /**
+     * Bind menu events and pass along to defined handler
+     * @param event
+     * @param handler
+     */
     MenuView.prototype.bind = function(event, handler) {
         var self = this;
         if (event === 'stratum-link-click') {
-            // $delegate(self.$menuParameters, '#strata-container .modal-link', 'click', function () {
             $(self.$menuParameters).on('click', '#strata-container .modal-link', function() {
                 var stratumIndex = self._stratumIndex(this);
                 handler({index: stratumIndex});
             });
         } else if (event === 'series-link-click') {
-            // $delegate(self.$menuParameters, '#series-link', 'click', function () {
             $(self.$menuParameters).on('click', '#series-link', function() {
                 handler();
             });
         } else if (event === 'time-link-click') {
-            // $delegate(self.$menuParameters, '#time-link', 'click', function () {
             $(self.$menuParameters).on('click', '#time-link', function() {
                 handler();
             });
         } else if (event === 'variable-link-click') {
-            // $delegate(self.$menuParameters, '#variable-link', 'click', function () {
             $(self.$menuParameters).on('click', '#variable-link', function() {
                 handler();
             });
         } else if (event === 'stratum-modal-select-all') {
-            //$delegate(self.$body, 'div[id^=stratum] .select-all', 'click', function() {
             $(self.$body).on('click', 'div[id^=stratum] .select-all', function() {
                 var modalIndex = self._modalIndex(this);
                 var values = self.stratumModalViews[modalIndex].getAllDropdownValues();
                 handler({index: modalIndex, values: values});
             });
         } else if (event === 'stratum-modal-select-none') {
-            // $delegate(self.$body, 'div[id^=stratum] .select-none', 'click', function() {
             $(self.$body).on('click', 'div[id^=stratum] .select-none', function() {
                 handler({index: self._modalIndex(this), values: []});
             });
         } else if (event === 'stratum-modal-approve') {
-            // $delegate(self.$body, 'div[id^=stratum] .ui.positive', 'click', function() {
             $(self.$body).on('click', 'div[id^=stratum] .ui.positive', function() {
                 var modalIndex = self._modalIndex(this);
                 var mv = self.stratumModalViews[modalIndex];
@@ -118,24 +134,20 @@
                 handler({index: modalIndex, items: items});
             });
         } else if (event === 'time-slider-change') {
-            // $delegate(self.$body, '#time-slider', 'slide', function () {
             $(self.$body).on('slide', '#time-slider', function(event, ui) {
                 handler({event: event, ui: ui});
             });
         } else if (event === 'time-modal-approve') {
-            // $delegate(self.$body, '#time-slider', 'stop', function () {
             $(self.$body).on('click', 'div[id^=time] .ui.positive', function() {
                 var timeRange = self.timeModalView.getTimeRange();
                 handler({timeRange: timeRange});
             });
         } else if (event === 'series-modal-approve') {
-            // $delegate(self.$body, 'div[id^=series] .ui.positive', 'stop', function () {
             $(self.$body).on('click', 'div[id^=series] .ui.positive', function() {
                 var selected = self.seriesModalView.getSelectedValue();
                 handler({series: selected});
             });
         } else if (event === 'variable-modal-approve') {
-            // $delegate(self.$body, '#time-slider', 'stop', function () {
             $(self.$body).on('click', 'div[id^=variable] .ui.positive', function() {
                 var selected = self.variableModalView.getSelectedValue();
                 handler({variable: selected});
@@ -143,11 +155,23 @@
         }
     };
 
+    /**
+     * Return the index of the modal dialog
+     * @param element
+     * @returns {Number}
+     * @private
+     */
     MenuView.prototype._modalIndex = function (element) {
         var modalID =  $(element).closest('div.ui.modal').attr('id');
         return parseInt(modalID.split('-')[1], 10);
     };
 
+    /**
+     * Return the index associated with the stratum
+     * @param element
+     * @returns {Number}
+     * @private
+     */
     MenuView.prototype._stratumIndex = function (element) {
         var stratumID =  $(element).closest('div.column').attr('id');
         return parseInt(stratumID.split('-')[1], 10);

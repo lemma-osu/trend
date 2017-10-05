@@ -1,6 +1,10 @@
 (function (window) {
     'use strict';
 
+    /**
+     * Class to provide template for Semantic UI slider
+     * @constructor
+     */
     function SliderTemplate() {
         this.defaultTemplate =
             '<div class="sixteen wide column">' +
@@ -9,6 +13,12 @@
             '</div>';
     }
 
+    /**
+     * Render slider based on input
+     * @param {string} sliderId - ID of the slider
+     * @param {Array} range - Minimum/maximum values for slider
+     * @returns {string}
+     */
     SliderTemplate.prototype.render = function(sliderId, range) {
         var rangeMin = range[0];
         var rangeMax = range[1];
@@ -18,6 +28,10 @@
         return sliderHtml.replace(/{{rangeMax}}/g, rangeMax);
     };
 
+    /**
+     * Class to provide template for Semantic UI slider modal dialog
+     * @constructor
+     */
     function SliderModalTemplate() {
         this.defaultTemplate =
             '<div id="{{id}}" class="ui modal grid">' +
@@ -30,6 +44,11 @@
             '</div>';
     }
 
+    /**
+     * Render slider modal dialog based on input
+     * @param data
+     * @returns {string|*}
+     */
     SliderModalTemplate.prototype.render = function (data) {
         var view = this.defaultTemplate;
 
