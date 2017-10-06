@@ -110,7 +110,7 @@
         var self = this;
         this._configModel.filterGroupRecords(function(obj) {
             var units = self._configModel.selected().weightField.units;
-            self._informationView.render('update', {units: units, data: obj.data, count: obj.count});
+            self._informationView.render({data: obj.data, count: obj.count, units: units});
             self._menuView.render('updateBackground', obj);
 
             // Subset the data to not shown series that don't meet minimum
