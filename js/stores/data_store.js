@@ -8,7 +8,7 @@
      * @constructor
      */
     function DataStore() {
-        this._data = [];
+        this.data = [];
     }
 
     /**
@@ -21,7 +21,7 @@
         var self = this;
         d3.csv(csvFn, function(error, data) {
             if (error) throw error;
-            self._data = data;
+            self.data = data;
             callback.call(self, data);
         });
     };
@@ -32,7 +32,7 @@
      */
     DataStore.prototype.findAll = function (callback) {
         callback = callback || function() {};
-        callback.call(this, this._data);
+        callback.call(this, this.data);
     };
 
     /**
@@ -44,7 +44,7 @@
         if (!callback) {
             return;
         }
-        callback.call(this, this._data.filter(function (row) {
+        callback.call(this, this.data.filter(function (row) {
             for (var q in query) {
                 if (query[q] !== row[q]) {
                     return false;
@@ -59,7 +59,7 @@
      * @returns {Array}
      */
     DataStore.prototype.fieldNames = function() {
-        return _.keys(this._data[0]);
+        return _.keys(this.data[0]);
     };
 
     /**
@@ -67,7 +67,7 @@
      * @param {Array} numericFields - The fields to convert to numeric
      */
     DataStore.prototype.convertNumericFields = function(numericFields) {
-        _.forEach(this._data, function(r) {
+        _.forEach(this.data, function(r) {
             _.forEach(numericFields, function(f) {
                 r[f] = +r[f];
             });
@@ -83,17 +83,15 @@
      */
     DataStore.prototype.addGroupRecords = function(configModel) {
         // Initially, mark all data as 'non-grouped'
-        _.forEach(this._data, function(d) { d.grouped = false; });
+        _.forEach(this.data, function(d) { d.grouped = false; });
 
         // Calculate group data records
-        var copyData = _.clone(this._data);
+        var copyData = _.clone(this.data);
         var self = this;
-        _.forEach(configModel.strataFields(), function(s) {
-            _.forEach(s.categories, function(c) {
-                if (c.type === 'group') {
-                    var groupData = self._calculateGroupData(configModel, copyData, s.key, c.key, c.items);
-                    self._data = self._data.concat(groupData);
-                }
+        _.forEach(configModel.strataFields, function(s) {
+            _.forEach(s.groups, function(g) {
+                var groupData = self._calculateGroupData(configModel, copyData, s.key, g.key, g.items);
+                self.data = self.data.concat(groupData);
             });
         });
     };
@@ -121,14 +119,14 @@
         // Group by the remaining categorical fields.  This will create groups for
         // each unique combination.  Note that the group key becomes a
         // comma-delimited string.
-        var contKeys = _.map(configModel.variableFields(), function(v) { return v.key; });
+        var contKeys = _.map(configModel.variableFields, function(v) { return v.key; });
         var groups = _.groupBy(filteredData, function (d) {
             return _.values(_.omit(d, contKeys));
         });
         var groupKeys = _.keys(_.omit(filteredData[0], contKeys));
 
         // Create a new data record for each combination and this group.
-        var weightKey = configModel.weightField().key;
+        var weightKey = configModel.weightField.key;
         var newData = [];
         _.forEach(groups, function (groupData, groupKey) {
             var obj = {};
@@ -152,7 +150,7 @@
 
             // For each continuous variable, calculate either the weighted mean
             // or sum of area
-            _.forEach(configModel.variableFields(), function (v) {
+            _.forEach(configModel.variableFields, function (v) {
                 if (v.key === weightKey) {
                     obj[v.key] = totalWeight;
                 } else {

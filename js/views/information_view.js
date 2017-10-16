@@ -158,9 +158,9 @@
      */
     InformationView.prototype.initialize = function(config) {
         this.notShownView.lowerLimit(0.0);
-        this.notShownView.upperLimit(config.minimumAreaThreshold());
-        this.lowAreaView.lowerLimit(config.minimumAreaThreshold());
-        this.lowAreaView.upperLimit(config.lowAreaThreshold());
+        this.notShownView.upperLimit(config.minimumAreaThreshold);
+        this.lowAreaView.lowerLimit(config.minimumAreaThreshold);
+        this.lowAreaView.upperLimit(config.lowAreaThreshold);
     };
 
     /**

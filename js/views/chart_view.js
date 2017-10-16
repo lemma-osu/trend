@@ -118,7 +118,7 @@
         this._yDomain = 'init';
         this._xAxisLabelText = false;
         this._yAxisLabelText = false;
-        this._color = d3.scale.category20().range();
+        this.color = d3.scale.category10().range();
         this.dispatch = d3.dispatch('showTooltip', 'hideTooltip', 'zoomView');
 
         this._x = d3.scale.linear();
@@ -131,7 +131,7 @@
             .scale(this._y)
             .orient('left');
 
-        this._legendView = new window.app.LegendView().color(this._color);
+        this._legendView = new window.app.LegendView().color(this.color);
         this._linesView = new window.app.LinesView();
     }
 
@@ -143,14 +143,13 @@
     ChartView.prototype.initialize = function(config, data) {
         var self = this;
         self
-            .xAxisLabelText(config.selected().timeField.alias)
+            .xAxisLabelText(config.selected.timeField.alias)
             .width($('#chart').width())
             .height(400);
         d3.select('#chart svg')
             .datum(data)
             .attr('width', self._width)
-            .attr('height', self._height)
-            .call(self.render.bind(self), config);
+            .attr('height', self._height);
     };
 
     /**
@@ -173,17 +172,21 @@
 
     /**
      * Main rendering of chart based on currently selected data
-     * @param selection - Currently selected data
+     * @param {d3.selection} selection - Currently selected data
      * @param {ConfigurationModel} config - Configuration model
      */
     ChartView.prototype.render = function(selection, config) {
         var self = this;
         selection.each(function(data) {
-            var selected = config.selected();
+            var selected = config.selected;
+
+            // data = _.sortBy(data, function(o) {
+            //     return o.label;
+            // });
 
             var series = data
                 .filter(function(d) { return !d.disabled; })
-                .map(function(d) { return d.data; });
+                .map(function(d) { return d.getSeriesViewData(); });
 
             self._yAxisLabelText = selected.variableField.alias + ' (' +
                 selected.variableField.units + ')';
@@ -258,7 +261,7 @@
             });
 
             // Set the x range and extent from all data
-            self._x.domain(d3.extent(d3.merge(series), function(d) { return d[0]; }))
+            self._x.domain(d3.extent(d3.merge(series), function(d) { return d.x; }))
                 .range([0, self._width - self._margin.left - self._margin.right]);
 
             // If the y domain has not already been set, set it from the y-range
@@ -266,25 +269,30 @@
             self._y.range([self._height - self._margin.top - self._margin.bottom, 0]);
             if (self._yDomain === 'init') {
                 self._yDomain = 'set';
-                var extent = d3.extent(d3.merge(series), function(d) { return d[1]; });
-                var m = (extent[1] - extent[0]) / 90.0;
+                var globalMin = d3.min(d3.merge(series), function(d) { return d.min});
+                var globalMax = d3.max(d3.merge(series), function(d) { return d.max});
+                var m = (globalMax  - globalMin) / 90.0;
                 var dMin, dMax, PRECISION=0.00001;
                 if (Math.abs(m) > PRECISION) {
-                    dMin = extent[1] - m * 95.0;
-                    dMax = m * 100.0 + extent[0];
+                    dMin = globalMax - m * 95.0;
+                    dMax = m * 100.0 + globalMin;
                 } else {
-                    dMin = extent[0] * 0.95;
-                    dMax = extent[0] * 1.05;
+                    dMin = globalMin * 0.95;
+                    dMax = globalMin * 1.05;
+                }
+                if (dMin === 0.0 && dMax === 0.0) {
+                    dMin = -0.1;
+                    dMax = 0.1;
                 }
                 self._y.domain([dMin, dMax]);
             }
 
             // Add containers for axes, legend and lines
-            gEnter.append('rect').attr('class', 'pane');
             gEnter.append('g').attr('class', 'legendWrap');
             gEnter.append('g').attr('class', 'x axis');
             gEnter.append('g').attr('class', 'y axis');
             gEnter.append('g').attr('class', 'linesWrap');
+            gEnter.append('rect').attr('class', 'pane');
 
             // Set attributes for legend container - this needs to be done first
             // as there could be more than one row of legend items.  All other
@@ -357,8 +365,8 @@
                 .y(self._y)
                 .color(
                     data
-                    // map color by index if not present
-                        .map(function(d, i) { return d.color || self._color[i % 20]; })
+                        // map color by index if not present
+                        .map(function(d, i) { return d.color || self.color[i % 20]; })
                         // filter out disabled data
                         .filter(function(d, i) { return !data[i].disabled; })
                 );
@@ -374,7 +382,7 @@
             // Join data for the lines container
             var linesWrap = wrap.select('.linesWrap')
                 .datum(data.filter(function(d) { return !d.disabled; }));
-            linesWrap.call(self._linesView.render.bind(self._linesView), config.lowAreaThreshold());
+            linesWrap.call(self._linesView.render.bind(self._linesView), config.lowAreaThreshold);
 
             // Set the x axis label and provide enter and exit methods
             var xAxisLabel = g.select('.x.axis').selectAll('text.axislabel')
@@ -461,8 +469,8 @@
      */
     ChartView.prototype.color = function(_) {
         if (!arguments.length)
-            return this._color;
-        this._color = _;
+            return this.color;
+        this.color = _;
         return this;
     };
 
