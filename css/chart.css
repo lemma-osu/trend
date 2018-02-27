@@ -66,7 +66,7 @@
   fill-opacity: 0.0;
 }
 
-.lines path {
+.lines path.basic {
   fill: none;
   stroke-width: 2px;
   stroke-linecap: round;
@@ -79,6 +79,20 @@
   -moz-transition-delay: 250ms;
   -webkit-transition-delay: 250ms;
 }
+
+.lines path.interval {
+  stroke-width: 1px;
+  stroke-linecap: round;
+
+  transition: stroke-width 250ms linear;
+  -moz-transition: stroke-width 250ms linear;
+  -webkit-transition: stroke-width 250ms linear;
+
+  transition-delay: 250ms;
+  -moz-transition-delay: 250ms;
+  -webkit-transition-delay: 250ms;
+}
+
 
 .line.hover path {
   stroke-width: 6px;

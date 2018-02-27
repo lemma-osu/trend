@@ -4,20 +4,18 @@
 <head>
   <meta charset="utf-8">
   <title>GNN Trend Tool</title>
+
   <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:400,700">
   <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.4/semantic.min.css">
   <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
   <link rel="stylesheet" href="css/trajectory.css">
   <link rel="stylesheet" href="css/chart.css">
+ 
   <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.4/semantic.min.js"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/lodash.js/4.13.1/lodash.min.js"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
-  <script src="js/documentation.js"></script>
-  <script src="js/util.js"></script>
-  <script src="js/ui.js"></script>
-  <script src="js/chart.js"></script>
 </head>
 
 <body>
@@ -26,7 +24,7 @@
   </div>
   <div id="documentation" class="ui large transition modal"></div>
   <div id="main-container">
-    <h1 class="ui header">GNN TrAccEr</h1>
+    <h1 class="ui header">GNN Trend Tool</h1>
     <div class="ui grid">
       <div class="row">
         <div class="sixteen wide column">
@@ -36,8 +34,8 @@
             <div class="ui grid">
               <div class="row">
                 <div id="left-info" class="twelve wide column">
-                  <div class="list-info">Focus Area</div>
-                  <div id="focus-container" class="ui equal width grid"></div>
+                  <div class="list-info">Strata</div>
+                  <div id="strata-container" class="ui equal width grid"></div>
                 </div>
                 <div class="four wide column">
                   <div class="list-info">
@@ -45,8 +43,8 @@
                     <span id="series-link" class="modal-link"></span>
                   </div>
                   <div class="list-info">
-                    <span>Year Range: </span>
-                    <span id="year-link" class="modal-link"></span>
+                    <span>Time Range: </span>
+                    <span id="time-link" class="modal-link"></span>
                   </div>
                   <div class="list-info">
                     <span>Variable: </span>
@@ -76,6 +74,49 @@
           <div id="low-area-warning" class="ui error message"></div>
         </div>
       </div>
+
+      <div class="row">
+        <div class="sixteen wide column">
+          <div id="olofsson" class="ui success message">
+            <div class="header">
+              Error-adjusted area corrections are available for this series
+            </div>
+            <div class="ui divider"></div>
+            <div class="ui grid">
+              <div class="row">
+                <div class="six wide column">
+                  <p>
+                    Olofsson et al. (2013) provide a method to use a confusion
+                    matrix of observed vs. predicted map classes to adjust modeled
+                    area estimates based on class accuracies.  The error matrix to
+                    the right provides the accuracy associated with the currently
+                    selected series' classes at selected FIA annual plot locations.
+                    Each mapped series also has a corresponding error-adjusted area
+                    estimate and 95% confidence interval for each class in the chart
+                    below (excluding grouped classes).
+                  </p>
+                  <p>
+                    Use the checkbox below to control the visibility of these
+                    error-adjusted series.
+                  </p>
+                  <div class="ui success checkbox">
+                    <input type="checkbox" name="ea-checkbox">
+                    <label>Show error-adjusted area series</label>
+                  </div>
+                  <p class="small-text">
+                    Olofsson, P, GM Foody, SV Stehman, CE Woodcock.  2103.  Making
+                    better use of accuracy data in land change studies: Estimating
+                    accuracy and area and quantifying uncertainty using stratified
+                    estimation.  Remote Sensing of Environment 129: 122-131
+                  </p>
+                </div>
+                <div id="error-matrix" class="ten wide column"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="row">
         <div class="sixteen wide column">
           <div id="chart">
@@ -85,7 +126,46 @@
       </div>
     </div>
   </div>
-  <script src="js/trajectory.js"></script>
+
+  <script src="js/helpers.js"></script>
+  <script src="js/documentation.js"></script>
+
+  <script src="js/stores/data_store.js"></script>
+
+  <script src="js/models/configuration_model.js"></script>
+  <script src="js/models/data_model.js"></script>
+  <script src="js/models/series_model.js"></script>
+  <script src="js/models/olofsson_model.js"></script>
+
+  <script src="js/templates/dialog_modal_template.js"></script>
+  <script src="js/templates/dropdown_modal_template.js"></script>
+  <script src="js/templates/series_template.js"></script>
+  <script src="js/templates/slider_modal_template.js"></script>
+  <script src="js/templates/stratum_template.js"></script>
+  <script src="js/templates/time_template.js"></script>
+  <script src="js/templates/variable_template.js"></script>
+
+  <script src="js/views/stratum_view.js"></script>
+  <script src="js/views/series_view.js"></script>
+  <script src="js/views/time_view.js"></script>
+  <script src="js/views/variable_view.js"></script>
+  <script src="js/views/stratum_modal_view.js"></script>
+  <script src="js/views/series_modal_view.js"></script>
+  <script src="js/views/time_modal_view.js"></script>
+  <script src="js/views/variable_modal_view.js"></script>
+  <script src="js/views/export_modal_view.js"></script>
+  <script src="js/views/menu_view.js"></script>
+
+  <script src="js/views/information_view.js"></script>
+  <script src="js/views/olofsson_view.js"></script>
+
+  <script src="js/views/legend_view.js"></script>
+  <script src="js/views/lines_view.js"></script>
+  <script src="js/views/chart_view.js"></script>
+
+
+  <script src="js/trend_controller.js"></script>
+  <script src="js/app.js"></script>
 </body>
 
 </html>

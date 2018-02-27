@@ -95,3 +95,41 @@ body.dimmed {
 #documentation .content li:last-child {
     margin-bottom: 0;
 }
+
+#olofsson {
+    margin-bottom: 20px;
+}
+
+.em-table {
+    table-layout: fixed;
+    border-collapse: collapse;
+}
+
+.em-table td {
+    border: 1px solid rgba(0,0,0,.5);
+    padding: 5px;
+    text-align: right;
+}
+
+.em-table td.correct {
+    background-color: #adcc9d;
+}
+
+.em-table .observed {
+    text-align: center;
+}
+
+.em-table .rotated {
+    -webkit-writing-mode: vertical-rl;
+    -ms-writing-mode: tb-rl;
+    writing-mode: vertical-rl;
+    transform: rotate(-180deg);
+}
+
+.em-table .em-data {
+    width: 100px;
+}
+
+.small-text {
+    font-size: 80%;
+}
