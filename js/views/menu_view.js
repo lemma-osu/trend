@@ -13,6 +13,7 @@
         this.timeModalView = new window.app.TimeModalView(new window.app.SliderModalTemplate());
         this.variableView = new window.app.VariableView(new window.app.VariableTemplate());
         this.variableModalView = new window.app.VariableModalView(new window.app.DropdownModalTemplate());
+        this.exportModalView = new window.app.ExportModalView(new window.app.DialogModalTemplate());
         this.stratumViews = [];
         this.stratumModalViews = [];
         this.$menuParameters = qs('#parameters');
@@ -29,23 +30,25 @@
         var self = this;
         var viewCommands = {
             initializeMenu: function() {
-                _.forEach(parameter.strataFields(), function(s, i) {
+                _.forEach(parameter.strataFields, function(sf, i) {
                     var sv = new window.app.StratumView(new window.app.StratumTemplate());
-                    sv.render('show', {stratum: s, index: i});
+                    sv.render('show', {stratum: sf, index: i});
                     self.stratumViews.push(sv);
 
                     var mv = new window.app.StratumModalView(new window.app.DropdownModalTemplate());
-                    mv.render('initialize', {stratum: s, id: i});
+                    mv.render('initialize', {stratum: sf, id: i});
                     self.stratumModalViews.push(mv);
                 });
-                self.seriesView.render('show', parameter.selected());
-                self.seriesModalView.render('initialize', parameter.strataFields());
+                self.seriesView.render('show', parameter.selected);
+                self.seriesModalView.render('initialize', parameter.strataFields);
 
-                self.timeView.render('show', parameter.selected());
-                self.timeModalView.render('initialize', parameter.selected());
+                self.timeView.render('show', parameter.selected);
+                self.timeModalView.render('initialize', parameter.selected);
 
-                self.variableView.render('show', parameter.selected());
-                self.variableModalView.render('initialize', parameter.variableFields());
+                self.variableView.render('show', parameter.selected);
+                self.variableModalView.render('initialize', parameter.variableFields);
+
+                self.exportModalView.render('initialize');
             },
             stratumModalShow: function() {
                 var mv = self.stratumModalViews[parameter.index];
@@ -79,6 +82,9 @@
             },
             variableUpdate: function() {
                 self.variableView.render('update', parameter);
+            },
+            exportModalShow: function() {
+                self.exportModalView.render('show');
             },
             updateBackground: function() {
                 var div = $(self.$menuParameters);
@@ -114,6 +120,10 @@
             });
         } else if (event === 'variable-link-click') {
             $(self.$menuParameters).on('click', '#variable-link', function() {
+                handler();
+            });
+        } else if (event === 'export-link-click') {
+            $(self.$menuParameters).on('click', '#export-link', function() {
                 handler();
             });
         } else if (event === 'stratum-modal-select-all') {
@@ -152,6 +162,11 @@
                 var selected = self.variableModalView.getSelectedValue();
                 handler({variable: selected});
             });
+        } else if (event === 'export-modal-approve') {
+            $(self.$body).on('click', 'div[id^=export] .ui.positive', function() {
+                var filename = self.exportModalView.getFilename();
+                handler({filename: filename});
+            })
         }
     };
 

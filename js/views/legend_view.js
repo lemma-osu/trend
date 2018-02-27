@@ -9,7 +9,7 @@
         this._margin = {top: 0, right: 0, bottom: 5, left: 10};
         this._width = 800;
         this._height = 20;
-        this._color = d3.scale.category20().range();
+        this._color = d3.scale.category10().range();
         this.dispatch = d3.dispatch('legendClick', 'legendMouseover', 'legendMouseout');
     }
 
@@ -44,8 +44,8 @@
 
             // Update existing series
             series.select('circle')
-                .style('fill', function(d, i) { return d.color || self._color[i % 20]; })
-                .style('stroke', function(d, i) { return d.color || self._color[i % 20]; });
+                .style('fill', function(d, i) { return d.color || self.color[i % 20]; })
+                .style('stroke', function(d, i) { return d.color || self.color[i % 20]; });
             series.select('text')
                 .text(function(d) { return d.label; });
 
@@ -58,8 +58,8 @@
 
             // Add the actual legend elements (circle and text)
             seriesEnter.append('circle')
-                .style('fill', function(d, i) { return d.color || self._color[i % 20]; })
-                .style('stroke', function(d, i) { return d.color || self._color[i % 20]; })
+                .style('fill', function(d, i) { return d.color || self.color[i % 20]; })
+                .style('stroke', function(d, i) { return d.color || self.color[i % 20]; })
                 .attr('r', 5);
             seriesEnter.append('text')
                 .text(function(d) { return d.label; })
@@ -76,7 +76,7 @@
             // Run through the labels one time to calculate the max spacing needed
             // for all labels.  This will organize the labels into columns
             var maxLength = 0;
-            series.each(function(d) {
+            series.each(function() {
                 var node = d3.select(this).select('text').node();
                 var length = node.getComputedTextLength() + 45;
                 maxLength = length > maxLength ? length : maxLength;
@@ -87,7 +87,7 @@
             // single line
             var ypos = 0, newxpos = 0, maxWidth = 0, xpos;
             series
-                .attr('transform', function(d) {
+                .attr('transform', function() {
                     xpos = newxpos;
                     if (self._width < self._margin.left + self._margin.right + xpos + maxLength) {
                         newxpos = xpos = 0;

@@ -59,9 +59,7 @@
      */
     StratumModalView.prototype.buildDropdownItems = function (stratum) {
         var dropdownItems = [];
-        var groups = _.filter(stratum.categories, function (g) {
-            return g.type === 'group';
-        });
+        var groups = stratum.groups;
         if (groups.length) {
             dropdownItems.push({type: 'header', key: 'Groups'});
             dropdownItems = dropdownItems.concat(_.map(groups, function (g) {
@@ -70,10 +68,8 @@
             dropdownItems.push({type: 'divider'});
         }
         dropdownItems.push({type: 'header', key: 'Items'});
-        var items = _.filter(stratum.categories, function (c) {
-            return c.type === 'item';
-        });
-        return dropdownItems.concat(_.map(items, function (c) {
+        var cats = stratum.categories;
+        return dropdownItems.concat(_.map(cats, function (c) {
             return {type: 'item', key: c.key, alias: c.key + ': ' + c.alias};
         }));
     };

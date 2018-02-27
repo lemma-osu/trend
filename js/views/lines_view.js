@@ -10,7 +10,7 @@
         this._width = 960;
         this._height = 500;
         this._dotRadius = function() { return 2.5; };
-        this._color = d3.scale.category20().range();
+        this._color = d3.scale.category10().range();
         this._id = Math.floor(Math.random() * 10000);
         this._x = d3.scale.linear();
         this._y = d3.scale.linear();
@@ -27,21 +27,21 @@
     LinesView.prototype.render = function(selection, lowAreaThreshold) {
         var self = this;
         selection.each(function(data) {
-            var seriesData = data.map(function(d) { return d.data; });
             self._x0 = self._x0 || self._x;
             self._y0 = self._y0 || self._y;
 
-            // Add the series as an attribute to each point
-            data = data.map(function(series, i) {
-                series.data = series.data.map(function(point) {
-                    point.series = i;
-                    return point;
-                });
-                return series;
-            });
+            // // Add the series as an attribute to each point
+            // data = data.map(function(series, i) {
+            //     series.seriesData = series.seriesData.map(function(point) {
+            //         point.series = i;
+            //         return point;
+            //     });
+            //     return series;
+            // });
 
             // Set the domain and range of the x-axis
-            self._x.domain(d3.extent(d3.merge(seriesData), function(d) { return d[0]; }))
+            var seriesData = data.map(function(d) { return d.getSeriesViewData(); });
+            self._x.domain(d3.extent(d3.merge(seriesData), function(d) { return d.x; }))
                 .range([0, self._width - self._margin.left - self._margin.right]);
 
             // Set the range for the y-axis, but don't set the domain as this can
@@ -50,9 +50,9 @@
 
             // Create a 2D array with x, y coordinates and line and point
             // indexes
-            var vertices = d3.merge(data.map(function(line, lineIndex) {
-                return line.data.map(function(point, pointIndex) {
-                    return [self._x(point[0]), self._y(point[1]), lineIndex, pointIndex];
+            var vertices = d3.merge(seriesData.map(function(series, lineIndex) {
+                return series.map(function(point, pointIndex) {
+                    return [self._x(point.x), self._y(point.y), lineIndex, pointIndex];
                 });
             }));
 
@@ -200,42 +200,64 @@
                 .remove();
             lines.attr('class', function(d,i) { return 'line line-' + i; })
                 .classed('hover', function(d) { return d.hover; })
-                .style('fill', function(d,i) { return d.color || self._color[i % 20]; })
-                .style('stroke', function(d,i) { return d.color || self._color[i % 20]; })
+                .style('fill', function(d,i) { return d.color || self.color[i % 20]; })
+                .style('stroke', function(d,i) { return d.color || self.color[i % 20]; })
                 .style('stroke-dasharray', function(d) {
-                    return d.minWeight < lowAreaThreshold ? '3, 5' : 'none';
+                    return d.minWeight < lowAreaThreshold
+                        ? '3, 5'
+                        : d instanceof window.app.SeriesAndErrorsModel
+                            ? '1, 4'
+                            : 'none';
                 });
             lines.transition()
                 .style('stroke-opacity', 1)
                 .style('fill-opacity', 0.5);
 
             // Insert the paths into the line containers
-            var paths = lines.selectAll('path')
-                .data(function(d) { return [d.data]; });
+            var paths = lines.selectAll('path.basic')
+                .data(function(d) { return [d.getSeriesViewData()]; });
             paths.enter().append('path')
+                .attr('class', 'basic')
                 .attr('d', d3.svg.line()
-                    .x(function(d) { return self._x0(d[0]); })
-                    .y(function(d) { return self._y0(d[1]); })
+                    .x(function(d) { return self._x0(d.x); })
+                    .y(function(d) { return self._y0(d.y); })
                 );
             paths.exit().remove();
             paths.transition()
                 .attr('d', d3.svg.line()
-                    .x(function(d) { return self._x(d[0]); })
-                    .y(function(d) { return self._y(d[1]); })
+                    .x(function(d) { return self._x(d.x); })
+                    .y(function(d) { return self._y(d.y); })
                 );
+
+            var area = d3.svg.area()
+                .x(function(d) { return self._x(d.x); })
+                .y0(function(d) { return self._y(d.min); })
+                .y1(function(d) { return self._y(d.max); });
+
+            // Add areas to the line containers
+            var intervals = lines.selectAll('path.interval')
+                .data(function(d) { return [d.getSeriesViewData()]; });
+            intervals.enter().append('path')
+                .attr('class', 'interval')
+                .attr('d', function(d) { return area(d); })
+                .style('fill-opacity', 0.1);
+            intervals.exit().remove();
+            intervals.transition()
+                .attr('d', function(d) { return area(d); });
 
             // Add points to the line containers
             var points = lines.selectAll('circle.point')
-                .data(function(d) { return d.data; });
+                .data(function(d) { return d.getSeriesViewData(); });
             points.enter().append('circle')
-                .attr('cx', function(d) { return self._x0(d[0]); })
-                .attr('cy', function(d) { return self._y0(d[1]); });
+                .attr('cx', function(d) { return self._x0(d.x); })
+                .attr('cy', function(d) { return self._y0(d.y); });
             points.exit().remove();
             points.attr('class', function(d, i) { return 'point point-' + i; });
             points.transition()
-                .attr('cx', function(d) { return self._x(d[0]); })
-                .attr('cy', function(d) { return self._y(d[1]); })
+                .attr('cx', function(d) { return self._x(d.x); })
+                .attr('cy', function(d) { return self._y(d.y); })
                 .attr('r', self._dotRadius());
+
         });
         self._x0 = self._x;
         self._y0 = self._y;

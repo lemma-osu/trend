@@ -6,10 +6,9 @@
      * Model to hold accessor methods to the raw data.  Should be able
      * to go against multiple data stores.
      * @param {DataStore} storage - The data storage object
-     * @constructor
      */
     function DataModel(storage) {
-        this._dataStore = storage;
+        this.dataStore = storage;
     }
 
     /**
@@ -22,11 +21,11 @@
     DataModel.prototype.initialize = function(configModel, callback) {
         callback = callback || function() {};
         var numericFields = _.concat(
-            _.map(configModel.variableFields(), function(v) { return v.key; }),
-            [configModel.timeField().key]
+            _.map(configModel.variableFields, function(v) { return v.key; }),
+            [configModel.timeField.key]
         );
-        this._dataStore.convertNumericFields(numericFields);
-        this._dataStore.addGroupRecords(configModel);
+        this.dataStore.convertNumericFields(numericFields);
+        this.dataStore.addGroupRecords(configModel);
         this.read(callback);
     };
 
@@ -40,9 +39,9 @@
         callback = callback || function() {};
         if (queryType === 'function') {
             callback = query;
-            this._dataStore.findAll(callback);
+            this.dataStore.findAll(callback);
         } else {
-            this._dataStore.find(query, callback);
+            this.dataStore.find(query, callback);
         }
     };
 
@@ -50,8 +49,8 @@
      * Get field names associated with the data
      * @returns {Array}
      */
-    DataModel.prototype.getFieldNames = function () {
-        return this._dataStore.fieldNames();
+    DataModel.prototype.getSortedFieldNames = function () {
+        return this.dataStore.fieldNames().sort();
     };
 
     /**
@@ -76,7 +75,7 @@
      */
     DataModel.prototype.getFieldRange = function(records, field) {
         var data = this.getFieldUniqueValues(records, field);
-        var values = _.map(data, function(d) { return +d; });
+        var values = data.map(function(d) { return +d; });
         return [_.min(values), _.max(values)];
     };
 
@@ -86,52 +85,43 @@
      * data to get the individual categories associated with the group.
      * @param {Object} s - Series under consideration
      * @param {string} seriesVar - Currently selected series variable
+     * @param {Array} selectedCats - All categories from the seriesVar
      * @returns {*} - Unique list of categories to filter on for this stratum
      */
-    DataModel.prototype.filterStratum = function(s, seriesVar) {
-        var cats;
+    DataModel.prototype.filterStratum = function(s, seriesVar, selectedCats) {
         if (s.key === seriesVar) {
             // If this stratum matches the series variable, collect all records
-            cats = _.map(s.categories, function(d) {
-                return d.key;
-            });
+            return _.map(selectedCats, function(x) { return x.key; });
         } else {
             // Otherwise find the unique set of categories covered by this stratum
             // and we use this to filter for only non-grouped records below
-            cats = [];
-            _.forEach(s.categories, function (d) {
-                // Expand grouped categories to the items that compose it
-                if (d.type === 'group') {
-                    cats = cats.concat(d.items);
-                } else {
-                    cats.push(d.key);
-                }
-            });
-            cats = _.uniq(cats);
+            var cats = _.map(s.categories, function(c) { return c.key; });
+            var groups = _.map(s.groups, function(g) { return g.items; });
+            return _.uniq(_.union(cats, _.flatten(groups)));
         }
-        return cats;
     };
 
     /**
      * Filter records based on currently selected strata
      * @param {Array} strata - Strata for this configuration
      * @param {string} seriesField - Currently selected series field
+     * @param {Array} selectedCats - All categories from the seriesField
      * @param callback
      */
-    DataModel.prototype.filterRecords = function (strata, seriesField, callback) {
+    DataModel.prototype.filterRecords = function (strata, seriesField, selectedCats, callback) {
         callback = callback || function() {};
         var self = this;
 
         // For each stratum, set the values that will be included in the
         // filter for data rows
         var conds = {};
-        _.forEach(strata, function (s) {
-            conds[s.key] = self.filterStratum(s, seriesField);
+        strata.forEach(function (s) {
+            conds[s.key] = self.filterStratum(s, seriesField, selectedCats);
         });
 
         // Start with the full data set and filter the records based on the
         // presence of the filters for each stratum.
-        this._dataStore.findAll(function(data) {
+        this.dataStore.findAll(function(data) {
             var out_data = [];
             for (var i = 0; i < data.length; i++) {
                 var d = data[i];
@@ -168,7 +158,7 @@
      * @returns {*} - Summed value
      */
     DataModel.prototype.getSum = function(records, field) {
-        return _.reduce(records, function(memo, d) {
+        return records.reduce(function(memo, d) {
             return memo + (+d[field]);
         }, 0);
     };
@@ -182,7 +172,7 @@
      * @returns {*} - Summed product of weights and values
      */
     DataModel.prototype.getWeightedSum = function(records, weightField, valueField) {
-        return _.reduce(records, function (memo, d) {
+        return records.reduce(function (memo, d) {
             return memo + (+d[weightField] * +d[valueField]);
         }, 0);
     };
@@ -222,16 +212,23 @@
         var series = this.getFieldUniqueValues(filteredData, seriesField);
 
         // // Get the color choices
-        // // TODO: This should probably be in the view
-        // var groups = configModel.getCategoricalField(seriesVar).groups;
-        // var items = configModel.getCategoricalField(seriesVar).categories;
-        // var colors = _.fromPairs(_.map(series, function (d) {
-        //     if (_.includes(_.keys(groups), d)) {
-        //         return [d, groups[d].color];
-        //     } else {
-        //         return [d, items[d].color];
-        //     }
-        // }));
+        var color;
+        var categories = configModel.stratum(seriesField).categories;
+        var groups = configModel.stratum(seriesField).groups;
+        var groupKeys = _.map(groups, function(g) { return g.key; });
+        var colors = _.fromPairs(series.map(function (s) {
+            if (groupKeys.includes(s)) {
+                color = _.find(groups, function(g) {
+                    return g.key === s;
+                }).color;
+                return [s, color];
+            } else {
+                color = _.find(categories, function(c) {
+                    return c.key === s;
+                }).color;
+                return [s, color];
+            }
+        }));
 
         // Assign the data to each series.  This iterates through the records and
         // pushes the record to the correct series if that record is not grouped
@@ -239,19 +236,12 @@
         // counting).  The record also has to meet the year threshold to be
         // assigned.  For series that represent groups, assign the record if the
         // series matches.
-        var seriesData = _.zipObject(series, _.map(series, function () {
+        var seriesData = _.zipObject(series, _.map(series, function() {
             return [];
         }));
-        var cats = configModel.getStratum(seriesField).categories;
-        var groups = _.filter(cats, function(d) {
-            return d.type === 'group';
-        });
-        var groupKeys = _.map(groups, function(d) {
-            return d.key;
-        });
-        _.forEach(filteredData, function (d) {
+        filteredData.forEach(function (d) {
             if (+d[timeField] >= minTime && +d[timeField] <= maxTime) {
-                _.forEach(groupKeys, function (g) {
+                groupKeys.forEach(function (g) {
                     if (d[seriesField] === g) {
                         seriesData[g].push(d);
                     }
@@ -296,11 +286,7 @@
                     return [time, self.getSum(items, weightField)];
                 });
             }
-            return {
-                label: s,
-                minWeight: _.min(weights),
-                data: groupedData
-            };
+            return new window.app.SeriesModel(s, colors[s], _.min(weights), groupedData);
         });
     };
 
@@ -313,10 +299,14 @@
     DataModel.prototype.filterGroupRecordsFromConfig = function(configModel, callback) {
         callback = callback || function() {};
         var self = this;
-        var selected = configModel.selected();
+        var selected = configModel.selected;
 
         var strataFields = selected.strataFields;
         var seriesField = selected.seriesField.key;
+
+        // Collect all categories from the currently selected series
+        // as this can figure in to Olofsson metrics
+        var selectedCats = configModel.stratum(seriesField).categoriesAndGroups();
 
         // Get the continuous variable
         var varField = selected.variableField.key;
@@ -330,7 +320,7 @@
         var minTime = selected.minTime;
         var maxTime = selected.maxTime;
 
-        self.filterRecords(strataFields, seriesField, function (filteredData) {
+        self.filterRecords(strataFields, seriesField, selectedCats, function (filteredData) {
             // Finally group these data and return
             // TODO: Take out configModel as argument
             var groupData = self.groupData(filteredData, configModel,
