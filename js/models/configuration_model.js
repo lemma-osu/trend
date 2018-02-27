@@ -299,7 +299,7 @@
      * @private
      */
     ConfigurationModel.prototype._setVariablesFromConfig = function(configData) {
-        var variables = this._getFieldsFromConfig(configData, ['continuous', 'weight']);
+        var variables = this._getFieldsFromConfig(configData, ['continuous', 'weight', 'total']);
         return _.map(variables, function(variable) {
             return new VariableField(
                 variable.key,
